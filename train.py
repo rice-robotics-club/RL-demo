@@ -26,8 +26,9 @@ class QuadrupedEnv(gym.Env):
     """
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
-    def __init__(self, render_mode=None):
+    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf"):
         super(QuadrupedEnv, self).__init__()
+        self.urdf_filename = urdf_filename
 
         # Connect to the PyBullet physics server
         if render_mode == 'human':
@@ -40,41 +41,42 @@ class QuadrupedEnv(gym.Env):
         self.episode_duration = 10.0  # 10 seconds
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 50.0 # Maximum force in Nm
-        # --- NEW: Action skipping for more realistic control frequency ---
         self.action_skip = 8 # Agent makes a decision every 8 simulation steps (30Hz)
-        # ----------------------------------------------------------------
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
-        # These weights control the importance of each reward component.
         self.FORWARD_VELOCITY_WEIGHT = 1.5
         self.UPRIGHT_REWARD_WEIGHT = 0.5
         self.ACTION_PENALTY_WEIGHT = 0.001
         self.SHAKE_PENALTY_WEIGHT = 0.001
         self.SURVIVAL_BONUS = 0.1
-        # --- NEW: Add a penalty for being in a fallen state ---
         self.FALLEN_PENALTY = 2.0
-        # ----------------------------------------------------
 
         # Set up the simulation environment
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
         p.setPhysicsEngineParameter(fixedTimeStep=self.time_step)
 
-        # Load the robot and ground plane
+        # Load the ground plane
         self.plane_id = p.loadURDF("plane.urdf")
         
-        # Action space: target joint angles for the four revolute joints
-        num_joints = 4
-        # We can control the target position of each joint.
+        # --- MODIFIED: Load robot and define spaces in __init__ ---
+        start_position = [0, 0, 1.0]
+        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
+        
+        self.joint_indices = []
+        for i in range(p.getNumJoints(self.robot_id)):
+            joint_info = p.getJointInfo(self.robot_id, i)
+            if joint_info[2] == p.JOINT_REVOLUTE:
+                self.joint_indices.append(i)
+
+        num_joints = len(self.joint_indices)
         self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
 
-        # Observation space: joint angles, joint velocities, base position and orientation
-        # 4 joint positions, 4 joint velocities, 3 base pos, 4 base orient, 3 base vel, 3 base angular vel
-        # Total: 4 + 4 + 3 + 4 + 3 + 3 = 21
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(num_joints * 2 + 13,), dtype=np.float32)
+        obs_space_shape = (num_joints * 2) + 13
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
+        # -----------------------------------------------------------
         
-        self.robot_id = None
-        self.joint_indices = []
         self.render_mode = render_mode
 
     def _get_obs(self):
@@ -104,24 +106,20 @@ class QuadrupedEnv(gym.Env):
         """
         super().reset(seed=seed)
         
-        if self.robot_id is not None:
-            p.removeBody(self.robot_id)
-        
-        start_position = [0, 0, 1.0] # Starts at z=1.0 as requested
+        # --- MODIFIED: Reset robot state without reloading ---
+        start_position = [0, 0, 1.0]
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-        
-        # Load the URDF file from the working directory
-        self.robot_id = p.loadURDF("simple_quadruped.urdf", start_position, start_orientation, useFixedBase=False)
-        
-        # Find the revolute joints
-        self.joint_indices = []
-        for i in range(p.getNumJoints(self.robot_id)):
-            joint_info = p.getJointInfo(self.robot_id, i)
-            if joint_info[2] == p.JOINT_REVOLUTE:
-                self.joint_indices.append(i)
-                p.setJointMotorControl2(
-                    self.robot_id, i, p.POSITION_CONTROL, targetPosition=0, force=self.action_force_limit
-                )
+        p.resetBasePositionAndOrientation(self.robot_id, start_position, start_orientation)
+        p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
+
+        for joint_index in self.joint_indices:
+            # Reset joint to position 0 with 0 velocity
+            p.resetJointState(self.robot_id, joint_index, targetValue=0, targetVelocity=0)
+            # Re-apply motor control
+            p.setJointMotorControl2(
+                self.robot_id, joint_index, p.POSITION_CONTROL, targetPosition=0, force=self.action_force_limit
+            )
+        # ----------------------------------------------------
 
         self.steps_taken = 0
         
@@ -135,7 +133,6 @@ class QuadrupedEnv(gym.Env):
         """
         total_reward = 0.0
         
-        # --- MODIFIED: Loop for action skipping ---
         for _ in range(self.action_skip):
             # Apply the SAME action for the duration of the skip
             for i, joint_index in enumerate(self.joint_indices):
@@ -193,16 +190,13 @@ class QuadrupedEnv(gym.Env):
             if self.steps_taken >= self.steps_per_episode:
                 break
         
-        # --- MODIFIED: Use total accumulated reward ---
         terminated = self.steps_taken >= self.steps_per_episode
         truncated = False 
         info = {}
         
         if self.render_mode == 'human':
-            # This sleep should now be for the duration of the action skip
             time.sleep(self.time_step * self.action_skip)
 
-        # The observation is from the FINAL state after all skipped steps
         return self._get_obs(), total_reward, terminated, truncated, info
 
     def render(self):
@@ -213,11 +207,12 @@ class QuadrupedEnv(gym.Env):
         p.disconnect()
 
 if __name__ == "__main__":
-    # Create the environment with a human-readable GUI
-    env = QuadrupedEnv(render_mode='human')
+    # To use a different robot, change the filename here
+    urdf_file = "servobot/servobot.urdf"
+    # Create the environment. Stable-baselines will automatically call reset.
+    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
     
     # Define the PPO agent from stable-baselines3
-    # MlpPolicy is a multi-layer perceptron neural network
     model = PPO("MlpPolicy", env, verbose=1,n_steps=1024)
 
     # Setup Checkpoint Callback to save the model every 10,000 steps
@@ -237,4 +232,3 @@ if __name__ == "__main__":
         env.close()
     
     print("Training finished.")
-
