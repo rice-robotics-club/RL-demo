@@ -1,0 +1,7 @@
+{
+  "documentId": "279005be3555e3fceb7b48bc",
+  "outputFormat": "urdf",
+  "packageName": "quadruped_description/quadruped",
+  "robotName": "servobot",
+  "assemblyName": "ServoBot"
+}
