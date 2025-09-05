@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+<robot name="simple_leg">
+    <link name="base_link">
+        <visual>
+            <geometry>
+                <box size="0.1 0.1 0.1"/>
+            </geometry>
+            <material name="white">
+                <color rgba="1 1 1 1"/>
+            </material>
+        </visual>
+        <!-- Added a collision shape for the base link. -->
+        <collision>
+            <geometry>
+                <box size="0.1 0.1 0.1"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <joint name="hip_joint" type="revolute">
+        <parent link="base_link"/>
+        <child link="thigh_link"/>
+        <axis xyz="1 0 0"/>
+        <limit lower="-1.57" upper="1.57" effort="50" velocity="10"/>
+        <origin rpy="0 0 0" xyz="0 0 0"/>
+    </joint>
+
+    <link name="thigh_link">
+        <visual>
+            <origin rpy="0 0 0" xyz="0 0 -0.25"/>
+            <geometry>
+                <box size="0.05 0.05 0.5"/>
+            </geometry>
+            <material name="blue">
+                <color rgba="0 0 1 1"/>
+            </material>
+        </visual>
+        <!-- Added a collision shape for the thigh link. -->
+        <collision>
+            <origin rpy="0 0 0" xyz="0 0 -0.25"/>
+            <geometry>
+                <box size="0.05 0.05 0.5"/>
+            </geometry>
+        </collision>
+        <inertial>
+            <mass value="1"/>
+            <inertia ixx="1" ixy="0" ixz="0" iyy="1" iyz="0" izz="1"/>
+        </inertial>
+    </link>
+</robot>
