@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # To use a different robot, change the filename here
     urdf_file = "servobot/servobot.urdf"
     # Create the environment. Stable-baselines will automatically call reset.
-    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
+    env = QuadrupedEnv(render_mode='huma', urdf_filename=urdf_file)
     
     # Define the PPO agent from stable-baselines3
     model = PPO("MlpPolicy", env, verbose=1,n_steps=1024)
@@ -218,8 +218,8 @@ if __name__ == "__main__":
     # Setup Checkpoint Callback to save the model every 10,000 steps
     checkpoint_callback = CheckpointCallback(
         save_freq=10000,
-        save_path='./quadruped_checkpoints/',
-        name_prefix='quadruped_model'
+        save_path='./servobot_checkpoints/',
+        name_prefix='servobot_model'
     )
     
     # Train the agent for a number of timesteps
