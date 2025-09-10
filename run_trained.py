@@ -22,9 +22,8 @@ class QuadrupedEnv(gym.Env):
     """
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
-    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf"):
+    def __init__(self, render_mode=None):
         super(QuadrupedEnv, self).__init__()
-        self.urdf_filename = urdf_filename
 
         # Connect to the PyBullet physics server
         if render_mode == 'human':
@@ -46,10 +45,6 @@ class QuadrupedEnv(gym.Env):
         # Load the robot and ground plane
         self.plane_id = p.loadURDF("plane.urdf")
         
-        # copied this logic from train.py
-        start_position = [0, 0, 1.0]
-        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-
         # Action space: target joint angles for the four revolute joints
         num_joints = 4
         self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
@@ -57,7 +52,7 @@ class QuadrupedEnv(gym.Env):
         # Observation space: joint angles, joint velocities, base position and orientation
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(num_joints * 2 + 13,), dtype=np.float32)
         
-        self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
+        self.robot_id = None
         self.joint_indices = []
         self.render_mode = render_mode
 
@@ -87,8 +82,8 @@ class QuadrupedEnv(gym.Env):
         
         start_position = [0, 0, 1.0]
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-
-        self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
+        
+        self.robot_id = p.loadURDF("simple_quadruped.urdf", start_position, start_orientation, useFixedBase=False)
         
         self.joint_indices = []
         for i in range(p.getNumJoints(self.robot_id)):
@@ -142,15 +137,14 @@ class QuadrupedEnv(gym.Env):
 
 if __name__ == "__main__":
     # Path to the saved model file
-    #model_path = "./quadruped_checkpoints/v3/quadruped_model_200000_steps.zip"
-    model_path = "./servobot_checkpoints/servobot_model_500000_steps.zip"
+    model_path = "./quadruped_checkpoints/v3/quadruped_model_200000_steps.zip"
 
     if not os.path.exists(model_path):
         print(f"Error: Model file not found at {model_path}")
         print("Please train your model first using train_quadruped.py.")
     else:
         # Create the environment with a human-readable GUI
-        env = QuadrupedEnv(render_mode='human', urdf_filename="servobot/servobot.urdf")
+        env = QuadrupedEnv(render_mode='human')
         
         # Load the trained model
         print(f"Loading model from {model_path}...")
