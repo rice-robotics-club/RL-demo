@@ -60,7 +60,7 @@ class QuadrupedEnv(gym.Env):
         self.plane_id = p.loadURDF("plane.urdf")
         
         # --- MODIFIED: Load robot and define spaces in __init__ ---
-        start_position = [0, 0, 1.0]
+        start_position = [0, 0, .5]
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
         
@@ -107,7 +107,7 @@ class QuadrupedEnv(gym.Env):
         super().reset(seed=seed)
         
         # --- MODIFIED: Reset robot state without reloading ---
-        start_position = [0, 0, 1.0]
+        start_position = [0, 0, .3]
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         p.resetBasePositionAndOrientation(self.robot_id, start_position, start_orientation)
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
@@ -163,6 +163,7 @@ class QuadrupedEnv(gym.Env):
 
             # --- STATE-DEPENDENT REWARD LOGIC ---
             is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.75
+
             
             step_reward = 0
             if not is_fallen:
@@ -183,7 +184,16 @@ class QuadrupedEnv(gym.Env):
                     action_penalty - 
                     shake_penalty
                 )
+
+                # step_reward = -1000  # Large negative reward for falling
+                # # End the episode immediately if fallen
+                # self.steps_taken = self.steps_per_episode
             
+            ''' REALLY SHITTY DEBUG INFO YOU CAN TURN ON IF YOU'RE CURIOUS (VISIBLE IN THE GUI) '''
+            if self.render_mode == 'human':
+                p.addUserDebugText(f"Step Reward: {step_reward:.4f}", [0,0,1.2], textColorRGB=[1,0,0], lifeTime=0.1)
+            ''' ----------------------------------------------------- '''
+
             total_reward += step_reward
 
             # Check for termination inside the loop in case the episode ends mid-skip
@@ -217,7 +227,7 @@ if __name__ == "__main__":
 
     # Setup Checkpoint Callback to save the model every 10,000 steps
     checkpoint_callback = CheckpointCallback(
-        save_freq=10000,
+        save_freq=100000,
         save_path='./servobot_checkpoints/',
         name_prefix='servobot_model'
     )
