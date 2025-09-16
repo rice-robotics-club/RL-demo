@@ -210,7 +210,7 @@ if __name__ == "__main__":
     # To use a different robot, change the filename here
     urdf_file = "servobot/servobot.urdf"
     # Create the environment. Stable-baselines will automatically call reset.
-    env = QuadrupedEnv(render_mode='huma', urdf_filename=urdf_file)
+    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
     
     # Define the PPO agent from stable-baselines3
     model = PPO("MlpPolicy", env, verbose=1,n_steps=1024)
