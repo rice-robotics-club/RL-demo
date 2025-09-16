@@ -38,19 +38,22 @@ class QuadrupedEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 10.0  # 10 seconds
+        self.episode_duration = 2.0  # 10 seconds
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 50.0 # Maximum force in Nm
+        self.action_force_limit = 1 # Maximum force in Nm
         self.action_skip = 8 # Agent makes a decision every 8 simulation steps (30Hz)
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
-        self.FORWARD_VELOCITY_WEIGHT = 1.5
-        self.UPRIGHT_REWARD_WEIGHT = 0.5
-        self.ACTION_PENALTY_WEIGHT = 0.001
-        self.SHAKE_PENALTY_WEIGHT = 0.001
+        self.FORWARD_VELOCITY_WEIGHT = -1.5
+        self.UPRIGHT_REWARD_WEIGHT = 1.0
+        self.ACTION_PENALTY_WEIGHT = 1.0
+        self.SHAKE_PENALTY_WEIGHT = 0.1
         self.SURVIVAL_BONUS = 0.1
-        self.FALLEN_PENALTY = 2.0
+        self.FALLEN_PENALTY = 5.0
 
+        # --- START POSITION AND ORIENTATION---
+        self.start_position = [1.5, 1.5, 0.2]
+        self.start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         # Set up the simulation environment
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
@@ -60,8 +63,8 @@ class QuadrupedEnv(gym.Env):
         self.plane_id = p.loadURDF("plane.urdf")
         
         # --- MODIFIED: Load robot and define spaces in __init__ ---
-        start_position = [0, 0, 1.0]
-        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        start_position = self.start_position
+        start_orientation = self.start_orientation
         self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
         
         self.joint_indices = []
@@ -107,8 +110,8 @@ class QuadrupedEnv(gym.Env):
         super().reset(seed=seed)
         
         # --- MODIFIED: Reset robot state without reloading ---
-        start_position = [0, 0, 1.0]
-        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        start_position = self.start_position
+        start_orientation = self.start_orientation
         p.resetBasePositionAndOrientation(self.robot_id, start_position, start_orientation)
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
 
@@ -186,6 +189,9 @@ class QuadrupedEnv(gym.Env):
             
             total_reward += step_reward
 
+            if self.render_mode == 'human':
+                time.sleep(self.time_step)
+
             # Check for termination inside the loop in case the episode ends mid-skip
             if self.steps_taken >= self.steps_per_episode:
                 break
@@ -193,9 +199,6 @@ class QuadrupedEnv(gym.Env):
         terminated = self.steps_taken >= self.steps_per_episode
         truncated = False 
         info = {}
-        
-        if self.render_mode == 'human':
-            time.sleep(self.time_step * self.action_skip)
 
         return self._get_obs(), total_reward, terminated, truncated, info
 
@@ -208,7 +211,7 @@ class QuadrupedEnv(gym.Env):
 
 if __name__ == "__main__":
     # To use a different robot, change the filename here
-    urdf_file = "servobot/servobot.urdf"
+    urdf_file = "servobot/servobot.urdf" 
     # Create the environment. Stable-baselines will automatically call reset.
     env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
     
