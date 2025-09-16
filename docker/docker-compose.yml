@@ -22,4 +22,4 @@ services:
     volumes:
       - ../:/workspace
     working_dir: /workspace
-    command: bash -c "python3 visualize.py"
+    command: bash -c "python3 run_servobot_trained.py"
