@@ -49,7 +49,7 @@ class QuadrupedEnv(gym.Env):
         self.ACTION_PENALTY_WEIGHT = 0.001
         self.SHAKE_PENALTY_WEIGHT = 0.001
         self.SURVIVAL_BONUS = 0.1
-        self.FALLEN_PENALTY = 2.0
+        self.FALLEN_PENALTY = 3.0
 
         # Set up the simulation environment
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
@@ -162,7 +162,7 @@ class QuadrupedEnv(gym.Env):
             shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
 
             # --- STATE-DEPENDENT REWARD LOGIC ---
-            is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.75
+            is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.25
 
             
             step_reward = 0

@@ -1,0 +1,25 @@
+services:
+
+  train:
+    build: .
+    container_name: train_container
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: bash -c "python3 train.py"
+  
+  test:
+    build: .
+    container_name: test_container
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: bash -c "python3 test.py"
+
+  visualize:
+    build: .
+    container_name: visualize_container
+    volumes:
+      - ../:/workspace
+    working_dir: /workspace
+    command: bash -c "python3 visualize.py"

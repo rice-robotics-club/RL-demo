@@ -320,7 +320,7 @@
         <parent link="toplegasm"/>
         <child link="botlegasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from hipsubasm_2 to toplegasm -->
     <joint name="BR_TopLeg" type="revolute">
@@ -328,7 +328,7 @@
         <parent link="hipsubasm_2"/>
         <child link="toplegasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to hipsubasm_2 -->
     <joint name="BR_Hip" type="revolute">
@@ -336,7 +336,7 @@
         <parent link="mainbody"/>
         <child link="hipsubasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link mirroredhipsubasm -->
     <link name="mirroredhipsubasm">
@@ -512,7 +512,7 @@
         <parent link="toplegasm_2"/>
         <child link="botlegasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from mirroredhipsubasm to toplegasm_2 -->
     <joint name="BL_TopLeg" type="revolute">
@@ -520,7 +520,7 @@
         <parent link="mirroredhipsubasm"/>
         <child link="toplegasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to mirroredhipsubasm -->
     <joint name="BL_Hip" type="revolute">
@@ -528,7 +528,7 @@
         <parent link="mainbody"/>
         <child link="mirroredhipsubasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link mirroredhipsubasm_2 -->
     <link name="mirroredhipsubasm_2">
@@ -704,7 +704,7 @@
         <parent link="toplegasm_3"/>
         <child link="botlegasm_3"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from mirroredhipsubasm_2 to toplegasm_3 -->
     <joint name="FR_TopLeg" type="revolute">
@@ -712,7 +712,7 @@
         <parent link="mirroredhipsubasm_2"/>
         <child link="toplegasm_3"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to mirroredhipsubasm_2 -->
     <joint name="FR_Hip" type="revolute">
@@ -720,7 +720,7 @@
         <parent link="mainbody"/>
         <child link="mirroredhipsubasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Joint from hipsubasm to mainbody -->
     <joint name="FL_Hip" type="revolute">
@@ -728,7 +728,7 @@
         <parent link="hipsubasm"/>
         <child link="mainbody"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link toplegasm_4 -->
     <link name="toplegasm_4">
@@ -848,7 +848,7 @@
         <parent link="toplegasm_4"/>
         <child link="botlegasm_4"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from hipsubasm to toplegasm_4 -->
     <joint name="FL_TopLeg" type="revolute">
@@ -856,6 +856,6 @@
         <parent link="hipsubasm"/>
         <child link="toplegasm_4"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
     </joint>
 </robot>
