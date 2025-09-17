@@ -13,7 +13,7 @@ if __name__ == "__main__":
     # To use a different robot, change the filename here
     urdf_file = "servobot/servobot.urdf"
 
-    model_path = "./servobot_checkpoints/servobot_model_650000_steps.zip"
+    model_path = "./servobot_checkpoints/servobot_model_500000_steps.zip"
 
     # Create the environment. Stable-baselines will automatically call reset.
     env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)

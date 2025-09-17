@@ -165,7 +165,8 @@ class QuadrupedEnv(gym.Env):
             shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
 
             # --- STATE-DEPENDENT REWARD LOGIC ---
-            is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.75
+            is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.25
+
             
             step_reward = 0
             if not is_fallen:
@@ -186,7 +187,16 @@ class QuadrupedEnv(gym.Env):
                     action_penalty - 
                     shake_penalty
                 )
+
+                # step_reward = -1000  # Large negative reward for falling
+                # # End the episode immediately if fallen
+                # self.steps_taken = self.steps_per_episode
             
+            ''' REALLY SHITTY DEBUG INFO YOU CAN TURN ON IF YOU'RE CURIOUS (VISIBLE IN THE GUI) '''
+            if self.render_mode == 'human':
+                p.addUserDebugText(f"Step Reward: {step_reward:.4f}", [0,0,1.2], textColorRGB=[1,0,0], lifeTime=0.1)
+            ''' ----------------------------------------------------- '''
+
             total_reward += step_reward
 
             if self.render_mode == 'human':
@@ -220,7 +230,7 @@ if __name__ == "__main__":
 
     # Setup Checkpoint Callback to save the model every 10,000 steps
     checkpoint_callback = CheckpointCallback(
-        save_freq=10000,
+        save_freq=100000,
         save_path='./servobot_checkpoints/',
         name_prefix='servobot_model'
     )
