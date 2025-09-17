@@ -1,11 +1,14 @@
-# This script sets up a reinforcement learning environment to train a simple quadruped robot
-# to move as far as possible in 10 seconds. It uses the PyBullet physics engine for the
-# simulation and the stable-baselines3 library for the RL agent.
+# This script sets up a PyBullet-based reinforcement learning environment for a
+# simple quadruped robot. The task is to reach and touch a green target box
+# (specified by its center and size) within one episode (~30s by default),
+# while staying upright and avoiding jumping.
 #
-# To run this script, you'll need to install the required libraries:
-# pip install pybullet gymnasium stable-baselines3[extra]
+# Dependencies:
+#   pip install pybullet gymnasium stable-baselines3[extra]
 #
-# The script now assumes that 'simple_quadruped.urdf' exists in the same directory.
+# Notes:
+# - The URDF file 'simple_quadruped.urdf' must be in the same directory.
+# - Uses Stable-Baselines3 PPO as the baseline RL agent.
 
 import os
 import time
@@ -26,7 +29,7 @@ class QuadrupedEnv(gym.Env):
     """
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
-    # <-- 修改: 初始化参数变为目标方块的中心和大小
+    # Change: init now accepts a target box (center and size).
     def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", 
                  target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
         super(QuadrupedEnv, self).__init__()
@@ -39,23 +42,23 @@ class QuadrupedEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 15.0  # <-- 稍微延长一点时间给机器人探索
+        self.episode_duration = 30.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 200.0
         self.action_skip = 4
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
         self.GOAL_APPROACH_WEIGHT = 5.0
-        self.GOAL_REACHED_BONUS = 200.0  # 触碰成功给予巨大奖励
+        self.GOAL_REACHED_BONUS = 200.0  # Large bonus on touching the goal box
         self.UPRIGHT_REWARD_WEIGHT = 0.5
         self.ACTION_PENALTY_WEIGHT = 0.001
         self.SHAKE_PENALTY_WEIGHT = 0.001
         self.SURVIVAL_BONUS = 0
         self.FALLEN_PENALTY = 2.0
         self.FORWARD_VEL_WEIGHT = 3.0  
-        # <-- 新增: "禁止跳跃" 的惩罚权重
-        self.JUMP_PENALTY_WEIGHT = 0.02  # 惩罚过大的垂直速度
-        self.HIGH_ALTITUDE_PENALTY_WEIGHT = 0.01 # 惩罚离地过高
+        # New: discourage jumping/high vertical motion.
+        self.JUMP_PENALTY_WEIGHT = 0.2     # Penalize excessive vertical velocity
+        self.HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
@@ -66,14 +69,14 @@ class QuadrupedEnv(gym.Env):
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
 
-        # <-- 新增: 创建目标方块
+        # New: create the target box.
         self.target_box_center = np.array(target_box_center, dtype=np.float32)
         self.target_box_size = np.array(target_box_size, dtype=np.float32)
         box_half_extents = self.target_box_size / 2.0
         box_visual_shape_id = p.createVisualShape(p.GEOM_BOX, halfExtents=box_half_extents, rgbaColor=[0, 1, 0, 0.8])
         box_collision_shape_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=box_half_extents)
         self.box_id = p.createMultiBody(
-            baseMass=0,  # 静态物体，不会被推动
+            baseMass=0,  # Static body (immovable)
             baseCollisionShapeIndex=box_collision_shape_id,
             baseVisualShapeIndex=box_visual_shape_id,
             basePosition=[self.target_box_center[0], self.target_box_center[1], box_half_extents[2]]
@@ -103,7 +106,7 @@ class QuadrupedEnv(gym.Env):
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         
-        # <-- 修改: 观测目标变为方块的中心
+        # Change: observe the vector to the center of the target box.
         vec_to_target = self.target_box_center - np.array(base_pos[:2])
 
         obs = np.concatenate([
@@ -153,14 +156,14 @@ class QuadrupedEnv(gym.Env):
                 current_base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
                 base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
 
-                # --- Reward function part ---
+                # --- Reward function terms ---
                 current_distance_to_target = np.linalg.norm(self.target_box_center - np.array(current_base_pos[:2]))
                 distance_gained = self.last_distance_to_target - current_distance_to_target
                 approach_reward = self.GOAL_APPROACH_WEIGHT * distance_gained
                 to_target = self.target_box_center - np.array(current_base_pos[:2])
                 dist = np.linalg.norm(to_target) + 1e-6
                 dir_unit = to_target / dist
-                # 机器人在该方向的瞬时线速度（只取正向）
+                # Instantaneous speed in the direction of the target (clamped to >= 0).
                 forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
                 forward_speed = max(forward_speed, 0.0)
 
@@ -188,7 +191,7 @@ class QuadrupedEnv(gym.Env):
                 else:
                     step_reward = -self.FALLEN_PENALTY 
                     total_reward += step_reward
-                    terminated = True        # ← 加这一行
+                    terminated = False        # Added: do not terminate here
                     break 
 
                 total_reward += step_reward
@@ -199,7 +202,7 @@ class QuadrupedEnv(gym.Env):
             # --- Termination conditions ---
 
             terminated = False
-            truncated = self.steps_taken >= self.steps_per_episode  # 超时 => 截断 
+            truncated = self.steps_taken >= self.steps_per_episode  # Timeout => truncated 
 
             # --- ▼▼▼ CORRECTED LOGIC BLOCK ▼▼▼ ---
 
@@ -210,13 +213,13 @@ class QuadrupedEnv(gym.Env):
             if final_pos[2] > 1.3:
                 print("🚫 Jump Detected! Episode terminated with penalty. 🚫")
                 total_reward -= 50.0
-                terminated = True
+                terminated = False
 
             # 3. Check for falling (using the correct orientation variable)
             rotation_matrix = p.getMatrixFromQuaternion(final_orientation)
             final_up_vector = np.array([rotation_matrix[2], rotation_matrix[5], rotation_matrix[8]])
             if final_pos[2] < 0.6 or final_up_vector[2] < 0.7:
-                terminated = True
+                terminated = False
 
             # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
 
@@ -244,11 +247,11 @@ class QuadrupedEnv(gym.Env):
 if __name__ == "__main__":
     urdf_file = "simple_quadruped.urdf"
 
-    # 在这里设置目标方块的中心 [x, y] 和 大小 [width, depth, height]
+    # Set target box center [x, y] and size [width, depth, height].
     box_center = [12.0, 3.0]
-    box_size = [2.0, 2.0, 1.0] # 一个 2x2x1 米的方块
+    box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
 
-    # 将方块信息传递给环境
+    # Pass box parameters into the environment.
     env = QuadrupedEnv(
         render_mode='human', 
         urdf_filename=urdf_file, 
@@ -256,7 +259,7 @@ if __name__ == "__main__":
         target_box_size=box_size
     )
     
-    model = PPO("MlpPolicy", env, verbose=1, n_steps=2048) # 稍微增加 n_steps 可能有助于学习更复杂的任务
+    model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
 
     checkpoint_callback = CheckpointCallback(
         save_freq=10000,
@@ -266,7 +269,7 @@ if __name__ == "__main__":
     
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
-        model.learn(total_timesteps=2000000, callback=checkpoint_callback) # 这种任务可能需要更长的训练时间
+        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
     finally:
