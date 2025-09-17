@@ -215,6 +215,8 @@ class QuadrupedEnv(gym.Env):
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
+                if self.render_mode == 'human':
+                    time.sleep(self.time_step)
             
             # --- Termination conditions ---
 
@@ -249,8 +251,6 @@ class QuadrupedEnv(gym.Env):
 
             info = {}
             
-            if self.render_mode == 'human':
-                time.sleep(self.time_step * self.action_skip)
 
             return self._get_obs(), total_reward, terminated, truncated, info
 
