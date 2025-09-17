@@ -3,6 +3,18 @@ Universal environment for training, testing, simulating, and running quadruped r
 
 '''
 
+# This script sets up a PyBullet-based reinforcement learning environment for a
+# simple quadruped robot. The task is to reach and touch a green target box
+# (specified by its center and size) within one episode (~30s by default),
+# while staying upright and avoiding jumping.
+#
+# Dependencies:
+#   pip install pybullet gymnasium stable-baselines3[extra]
+#
+# Notes:
+# - The URDF file 'simple_quadruped.urdf' must be in the same directory.
+# - Uses Stable-Baselines3 PPO as the baseline RL agent.
+
 import os
 import time
 import math
@@ -22,7 +34,9 @@ class QuadrupedEnv(gym.Env):
     """
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
-    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf"):
+    # Change: init now accepts a target box (center and size).
+    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", 
+                 target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
         super(QuadrupedEnv, self).__init__()
         self.urdf_filename = urdf_filename
 
@@ -34,23 +48,24 @@ class QuadrupedEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 2.0  # 10 seconds
+        self.episode_duration = 30.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 1 # Maximum force in Nm
-        self.action_skip = 8 # Agent makes a decision every 8 simulation steps (30Hz)
+        self.action_force_limit = 200.0
+        self.action_skip = 4
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
-        self.FORWARD_VELOCITY_WEIGHT = -1.5
-        self.UPRIGHT_REWARD_WEIGHT = 1.0
-        self.ACTION_PENALTY_WEIGHT = 1.0
-        self.SHAKE_PENALTY_WEIGHT = 0.1
-        self.SURVIVAL_BONUS = 0.1
-        self.FALLEN_PENALTY = 5.0
+        self.GOAL_APPROACH_WEIGHT = 5.0
+        self.GOAL_REACHED_BONUS = 200.0  # Large bonus on touching the goal box
+        self.UPRIGHT_REWARD_WEIGHT = 0.5
+        self.ACTION_PENALTY_WEIGHT = 0.001
+        self.SHAKE_PENALTY_WEIGHT = 0.001
+        self.SURVIVAL_BONUS = 0
+        self.FALLEN_PENALTY = 2.0
+        self.FORWARD_VEL_WEIGHT = 3.0  
+        # New: discourage jumping/high vertical motion.
+        self.JUMP_PENALTY_WEIGHT = 0.2     # Penalize excessive vertical velocity
+        self.HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
 
-        # --- START POSITION AND ORIENTATION---
-        self.start_position = [1.5, 1.5, 0.2]
-        self.start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-        # Set up the simulation environment
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
         p.setPhysicsEngineParameter(fixedTimeStep=self.time_step)
@@ -58,10 +73,24 @@ class QuadrupedEnv(gym.Env):
         # Load the ground plane
         self.plane_id = p.loadURDF("plane.urdf")
         
-        # --- MODIFIED: Load robot and define spaces in __init__ ---
-        start_position = self.start_position
-        start_orientation = self.start_orientation
+        start_position = [0, 0, 1.0]
+        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
+
+        # New: create the target box.
+        self.target_box_center = np.array(target_box_center, dtype=np.float32)
+        self.target_box_size = np.array(target_box_size, dtype=np.float32)
+        box_half_extents = self.target_box_size / 2.0
+        box_visual_shape_id = p.createVisualShape(p.GEOM_BOX, halfExtents=box_half_extents, rgbaColor=[0, 1, 0, 0.8])
+        box_collision_shape_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=box_half_extents)
+        self.box_id = p.createMultiBody(
+            baseMass=0,  # Static body (immovable)
+            baseCollisionShapeIndex=box_collision_shape_id,
+            baseVisualShapeIndex=box_visual_shape_id,
+            basePosition=[self.target_box_center[0], self.target_box_center[1], box_half_extents[2]]
+        )
+
+        self.last_distance_to_target = 0.0
         
         self.joint_indices = []
         for i in range(p.getNumJoints(self.robot_id)):
@@ -72,9 +101,8 @@ class QuadrupedEnv(gym.Env):
         num_joints = len(self.joint_indices)
         self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
 
-        obs_space_shape = (num_joints * 2) + 13
+        obs_space_shape = (num_joints * 2) + 13 + 2
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
-        # -----------------------------------------------------------
         
         self.render_mode = render_mode
 
@@ -89,13 +117,12 @@ class QuadrupedEnv(gym.Env):
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         
+        # Change: observe the vector to the center of the target box.
+        vec_to_target = self.target_box_center - np.array(base_pos[:2])
+
         obs = np.concatenate([
-            joint_positions,
-            joint_velocities,
-            base_pos,
-            base_orient,
-            base_vel,
-            base_angular_vel
+            joint_positions, joint_velocities, base_pos, base_orient,
+            base_vel, base_angular_vel, vec_to_target
         ])
         return obs.astype(np.float32)
 
@@ -105,9 +132,8 @@ class QuadrupedEnv(gym.Env):
         """
         super().reset(seed=seed)
         
-        # --- MODIFIED: Reset robot state without reloading ---
-        start_position = self.start_position
-        start_orientation = self.start_orientation
+        start_position = [0, 0, 1.0]
+        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         p.resetBasePositionAndOrientation(self.robot_id, start_position, start_orientation)
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
 
@@ -122,94 +148,114 @@ class QuadrupedEnv(gym.Env):
 
         self.steps_taken = 0
         
+        base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+        self.last_distance_to_target = np.linalg.norm(self.target_box_center - np.array(base_pos[:2]))
+        
         observation = self._get_obs()
         info = {}
         return observation, info
 
     def step(self, action):
-        """
-        Take a step in the simulation with a revised reward function and action skipping.
-        """
-        total_reward = 0.0
-        
-        for _ in range(self.action_skip):
-            # Apply the SAME action for the duration of the skip
-            for i, joint_index in enumerate(self.joint_indices):
-                p.setJointMotorControl2(
-                    self.robot_id,
-                    joint_index,
-                    p.POSITION_CONTROL,
-                    targetPosition=action[i],
-                    force=self.action_force_limit
-                )
-
-            # Step the simulation forward
-            p.stepSimulation()
-            self.steps_taken += 1
-
-            # --- GET STATE FOR REWARD CALCULATION ---
-            current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
-            base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
-
-            # --- Calculate individual reward/penalty components ---
-            forward_velocity = base_vel[0]
-            rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
-            local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
-            uprightness = local_up_vector[2]
+            """
+            Take a step in the simulation with a revised reward function and a strict no-jump rule.
+            """
+            total_reward = 0.0
             
-            action_penalty = self.ACTION_PENALTY_WEIGHT * np.sum(np.square(action))
-            shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
+            for _ in range(self.action_skip):
+                for i, joint_index in enumerate(self.joint_indices):
+                    p.setJointMotorControl2(
+                        self.robot_id, joint_index, p.POSITION_CONTROL,
+                        targetPosition=action[i], force=self.action_force_limit
+                    )
+                p.stepSimulation()
+                self.steps_taken += 1
 
-            # --- STATE-DEPENDENT REWARD LOGIC ---
-            is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.25
+                current_base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+                base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
 
+                # --- Reward function terms ---
+                current_distance_to_target = np.linalg.norm(self.target_box_center - np.array(current_base_pos[:2]))
+                distance_gained = self.last_distance_to_target - current_distance_to_target
+                approach_reward = self.GOAL_APPROACH_WEIGHT * distance_gained
+                to_target = self.target_box_center - np.array(current_base_pos[:2])
+                dist = np.linalg.norm(to_target) + 1e-6
+                dir_unit = to_target / dist
+                # Instantaneous speed in the direction of the target (clamped to >= 0).
+                forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
+                forward_speed = max(forward_speed, 0.0)
+
+                forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
+                self.last_distance_to_target = current_distance_to_target
+
+                rot_matrix = p.getMatrixFromQuaternion(p.getBasePositionAndOrientation(self.robot_id)[1])
+                local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+                uprightness = local_up_vector[2]
+                action_penalty = self.ACTION_PENALTY_WEIGHT * np.sum(np.square(action))
+                shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
+                
+                is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.75
+                
+                step_reward = 0
+                if not is_fallen:
+                    upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
+                    jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
+                    high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
+                    step_reward -= (jump_penalty + high_alt_pen)
+                    step_reward = (
+                        approach_reward + forward_reward -
+                        action_penalty - shake_penalty
+                    )
+                else:
+                    step_reward = -self.FALLEN_PENALTY 
+                    total_reward += step_reward
+                    terminated = False        # Added: do not terminate here
+                    break 
+
+                total_reward += step_reward
+
+                if self.steps_taken >= self.steps_per_episode:
+                    break
             
-            step_reward = 0
-            if not is_fallen:
-                forward_reward = self.FORWARD_VELOCITY_WEIGHT * forward_velocity
-                upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-                step_reward = (
-                    forward_reward + 
-                    upright_reward + 
-                    self.SURVIVAL_BONUS - 
-                    action_penalty - 
-                    shake_penalty
-                )
-            else:
-                upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-                step_reward = (
-                    upright_reward - 
-                    self.FALLEN_PENALTY - 
-                    action_penalty - 
-                    shake_penalty
-                )
+            # --- Termination conditions ---
 
-                # step_reward = -1000  # Large negative reward for falling
-                # # End the episode immediately if fallen
-                # self.steps_taken = self.steps_per_episode
+            terminated = False
+            truncated = self.steps_taken >= self.steps_per_episode  # Timeout => truncated 
+
+            # --- ▼▼▼ CORRECTED LOGIC BLOCK ▼▼▼ ---
+
+            # 1. Get BOTH final position and final orientation
+            final_pos, final_orientation = p.getBasePositionAndOrientation(self.robot_id)
+
+            # 2. Check for jumping
+            if final_pos[2] > 1.3:
+                print("🚫 Jump Detected! Episode terminated with penalty. 🚫")
+                total_reward -= 50.0
+                terminated = False
+
+            # 3. Check for falling (using the correct orientation variable)
+            rotation_matrix = p.getMatrixFromQuaternion(final_orientation)
+            final_up_vector = np.array([rotation_matrix[2], rotation_matrix[5], rotation_matrix[8]])
+            if final_pos[2] < 0.6 or final_up_vector[2] < 0.7:
+                terminated = False
+
+            # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
+
+            # 4. Check for success
+            contact_points = p.getContactPoints(bodyA=self.robot_id, bodyB=self.box_id)
+            if len(contact_points) > 0 and not truncated:
+                total_reward += self.GOAL_REACHED_BONUS
+                truncated = True
+                print("🎉🎉🎉 Goal Touched! 🎉🎉🎉")
+
+            info = {}
             
-            ''' REALLY SHITTY DEBUG INFO YOU CAN TURN ON IF YOU'RE CURIOUS (VISIBLE IN THE GUI) '''
             if self.render_mode == 'human':
-                p.addUserDebugText(f"Step Reward: {step_reward:.4f}", [0,0,1.2], textColorRGB=[1,0,0], lifeTime=0.1)
-            ''' ----------------------------------------------------- '''
+                time.sleep(self.time_step * self.action_skip)
 
-            total_reward += step_reward
+            return self._get_obs(), total_reward, terminated, truncated, info
 
-            if self.render_mode == 'human':
-                time.sleep(self.time_step)
-
-            # Check for termination inside the loop in case the episode ends mid-skip
-            if self.steps_taken >= self.steps_per_episode:
-                break
-        
-        terminated = self.steps_taken >= self.steps_per_episode
-        truncated = False 
-        info = {}
-
-        return self._get_obs(), total_reward, terminated, truncated, info
 
     def render(self):
-        # We handle rendering directly in the PyBullet GUI.
         pass
 
     def close(self):
