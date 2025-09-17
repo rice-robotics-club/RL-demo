@@ -1,71 +1,13 @@
 <?xml version="1.0" ?>
-<!-- Generated using onshape-to-robot -->
-<!-- OnShape document_id: 279005be3555e3fceb7b48bc -->
-<robot name="robot">
-    <!-- Link hipsubasm -->
-    <link name="hipsubasm">
-        <inertial>
-            <origin xyz="-0.178685 -0.00769229 0.217583" rpy="0 0 0"/>
-            <mass value="0.0661231"/>
-            <inertia ixx="0" ixy="-0" ixz="0" iyy="0" iyz="0" izz="0"/>
-        </inertial>
-        <!-- Part hipjoint -->
-        <visual>
-            <origin xyz="-0.1642 -0.00754035 0.218266" rpy="0 0 -1.5708"/>
-            <geometry>
-                <mesh filename="hipjoint.stl"/>
-            </geometry>
-            <material name="hipjoint_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0.1642 -0.00754035 0.218266" rpy="0 0 -1.5708"/>
-            <geometry>
-                <mesh filename="hipjoint.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servo -->
-        <visual>
-            <origin xyz="-0.156 -0.00379035 0.217441" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0.156 -0.00379035 0.217441" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement -->
-        <visual>
-            <origin xyz="-0.1742 -0.0247903 0.235556" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0.1742 -0.0247903 0.235556" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-    </link>
+<!-- Optimized URDF for a quadruped with 4 joints (one per leg) -->
+<robot name="servobot">
     <!-- Link mainbody -->
     <link name="mainbody">
         <inertial>
             <origin xyz="0.05515 0.00881981 0.081525" rpy="0 0 0"/>
-            <mass value="0.493948"/>
-            <inertia ixx="0.00138407" ixy="-0" ixz="0" iyy="0.00243138" iyz="-0" izz="0.00112985"/>
+            <mass value="1.5"/>
+            <inertia ixx="0.003" ixy="0" ixz="0" iyy="0.005" iyz="0" izz="0.0025"/>
         </inertial>
-        <!-- Part base -->
         <visual>
             <origin xyz="0.13515 0.021 0.156525" rpy="-1.5708 0 3.14159"/>
             <geometry>
@@ -81,781 +23,138 @@
                 <mesh filename="base.stl"/>
             </geometry>
         </collision>
-        <!-- Part servo_2 -->
-        <visual>
-            <origin xyz="0.01015 -0 0.1168" rpy="-1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_2_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 -0 0.1168" rpy="-1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servo_3 -->
-        <visual>
-            <origin xyz="0.01015 -0 0.04625" rpy="1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_3_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 -0 0.04625" rpy="1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servo_4 -->
-        <visual>
-            <origin xyz="0.10015 -0 0.04625" rpy="1.5708 0 3.14159"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_4_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.10015 -0 0.04625" rpy="1.5708 0 3.14159"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servo_5 -->
-        <visual>
-            <origin xyz="0.10015 -0 0.1168" rpy="-1.5708 0 3.14159"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_5_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.10015 -0 0.1168" rpy="-1.5708 0 3.14159"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
     </link>
-    <!-- Link hipsubasm_2 -->
-    <link name="hipsubasm_2">
-        <inertial>
-            <origin xyz="-0.00448487 -0.0179728 -0.0160981" rpy="0 0 0"/>
-            <mass value="0.0661231"/>
-            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part hipjoint_2 -->
-        <visual>
-            <origin xyz="0.01 -0.01729 -0.01625" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="hipjoint.stl"/>
-            </geometry>
-            <material name="hipjoint_2_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01 -0.01729 -0.01625" rpy="-1.5708 -1.5708 0"/>
-            <geometry>
-                <mesh filename="hipjoint.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servo_6 -->
-        <visual>
-            <origin xyz="0.0182 -0.018115 -0.02" rpy="3.14159 -0 1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_6_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0182 -0.018115 -0.02" rpy="3.14159 -0 1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_2 -->
-        <visual>
-            <origin xyz="-0 -0 0.001" rpy="-3.14159 -0 1.5708"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_2_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 -0 0.001" rpy="-3.14159 -0 1.5708"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link toplegasm -->
-    <link name="toplegasm">
-        <inertial>
-            <origin xyz="0 0.056 -0.00366855" rpy="0 0 0"/>
-            <mass value="0.025684"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part servohornreplacement_3 -->
-        <visual>
-            <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_3_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part toplegcover -->
-        <visual>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-            <material name="toplegcover_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_4 -->
-        <visual>
-            <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_4_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part topleg -->
-        <visual>
-            <origin xyz="0 0.056 -0.0079" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-            <material name="topleg_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.056 -0.0079" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link botlegasm -->
-    <link name="botlegasm">
+
+    <!-- Link leg_br (Back Right) -->
+    <link name="leg_br">
         <inertial>
             <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
-            <mass value="0.0546456"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
+            <mass value="0.08"/>
+            <inertia ixx="3.2e-5" ixy="0" ixz="0" iyy="8.0e-5" iyz="0" izz="8.0e-5"/>
         </inertial>
-        <!-- Part servo_7 -->
         <visual>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_7_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part botleg -->
-        <visual>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
+            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
                 <mesh filename="botleg.stl"/>
             </geometry>
-            <material name="botleg_material">
+            <material name="leg_br_material">
                 <color rgba="0.87451 0.447059 0.317647 1.0"/>
             </material>
         </visual>
         <collision>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
+            <origin xyz="0.0316745 0 -0.02"/>
             <geometry>
-                <mesh filename="botleg.stl"/>
+                <sphere radius="0.01"/>
             </geometry>
         </collision>
     </link>
-    <!-- Joint from toplegasm to botlegasm -->
-    <joint name="BR_BotLeg" type="revolute">
-        <origin xyz="-0 0.112 0" rpy="3.14159 -0 1.5708"/>
-        <parent link="toplegasm"/>
-        <child link="botlegasm"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
-    </joint>
-    <!-- Joint from hipsubasm_2 to toplegasm -->
-    <joint name="BR_TopLeg" type="revolute">
-        <origin xyz="-0.02225 -0.028265 -0.02" rpy="3.14159 -1.5708 0"/>
-        <parent link="hipsubasm_2"/>
-        <child link="toplegasm"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
-    </joint>
-    <!-- Joint from mainbody to hipsubasm_2 -->
+
+    <!-- Link leg_bl (Back Left) -->
+    <link name="leg_bl">
+        <inertial>
+            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
+            <mass value="0.08"/>
+            <inertia ixx="3.2e-5" ixy="0" ixz="0" iyy="8.0e-5" iyz="0" izz="8.0e-5"/>
+        </inertial>
+        <visual>
+            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
+            <geometry>
+                <mesh filename="botleg.stl"/>
+            </geometry>
+            <material name="leg_bl_material">
+                <color rgba="0.87451 0.447059 0.317647 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0.0316745 0 -0.02"/>
+            <geometry>
+                <sphere radius="0.01"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Link leg_fr (Front Right) -->
+    <link name="leg_fr">
+        <inertial>
+            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
+            <mass value="0.08"/>
+            <inertia ixx="3.2e-5" ixy="0" ixz="0" iyy="8.0e-5" iyz="0" izz="8.0e-5"/>
+        </inertial>
+        <visual>
+            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
+            <geometry>
+                <mesh filename="botleg.stl"/>
+            </geometry>
+            <material name="leg_fr_material">
+                <color rgba="0.87451 0.447059 0.317647 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0.0316745 0 -0.02"/>
+            <geometry>
+                <sphere radius="0.01"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Link leg_fl (Front Left) -->
+    <link name="leg_fl">
+        <inertial>
+            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
+            <mass value="0.08"/>
+            <inertia ixx="3.2e-5" ixy="0" ixz="0" iyy="8.0e-5" iyz="0" izz="8.0e-5"/>
+        </inertial>
+        <visual>
+            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
+            <geometry>
+                <mesh filename="botleg.stl"/>
+            </geometry>
+            <material name="leg_fl_material">
+                <color rgba="0.87451 0.447059 0.317647 1.0"/>
+            </material>
+        </visual>
+        <collision>
+            <origin xyz="0.0316745 0 -0.02"/>
+            <geometry>
+                <sphere radius="0.01"/>
+            </geometry>
+        </collision>
+    </link>
+
+    <!-- Joints -->
     <joint name="BR_Hip" type="revolute">
         <origin xyz="0.1103 -0 0.16305" rpy="-3.14159 0 3.14159"/>
         <parent link="mainbody"/>
-        <child link="hipsubasm_2"/>
+        <child link="leg_br"/>
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
+        <limit effort="50" velocity="20" lower="-1.5708" upper="1.5708"/>
+        <dynamics damping="0.1" friction="0.1"/>
     </joint>
-    <!-- Link mirroredhipsubasm -->
-    <link name="mirroredhipsubasm">
-        <inertial>
-            <origin xyz="-0.00448487 0.0179728 -0.0160981" rpy="0 0 0"/>
-            <mass value="0.0661231"/>
-            <inertia ixx="0" ixy="-0" ixz="0" iyy="0" iyz="0" izz="0"/>
-        </inertial>
-        <!-- Part servo_8 -->
-        <visual>
-            <origin xyz="0.0182 0.018115 -0.02" rpy="0 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_8_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0182 0.018115 -0.02" rpy="0 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part mirrorhipjoint -->
-        <visual>
-            <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
-            <geometry>
-                <mesh filename="mirrorhipjoint.stl"/>
-            </geometry>
-            <material name="mirrorhipjoint_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
-            <geometry>
-                <mesh filename="mirrorhipjoint.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_5 -->
-        <visual>
-            <origin xyz="0 0 0.001" rpy="-3.14159 0 3.14159"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_5_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0 0.001" rpy="-3.14159 0 3.14159"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link toplegasm_2 -->
-    <link name="toplegasm_2">
-        <inertial>
-            <origin xyz="0 0.056 -0.00366855" rpy="0 0 0"/>
-            <mass value="0.025684"/>
-            <inertia ixx="0" ixy="0" ixz="0" iyy="0" iyz="0" izz="0"/>
-        </inertial>
-        <!-- Part servohornreplacement_6 -->
-        <visual>
-            <origin xyz="0 0 -0.0058" rpy="0 -0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_6_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0 -0.0058" rpy="0 -0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part toplegcover_2 -->
-        <visual>
-            <origin xyz="0 0.056 -0.0079" rpy="1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-            <material name="toplegcover_2_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.056 -0.0079" rpy="1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_7 -->
-        <visual>
-            <origin xyz="0 0.112 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_7_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.112 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part topleg_2 -->
-        <visual>
-            <origin xyz="0 0.056 -0.0079" rpy="-0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-            <material name="topleg_2_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.056 -0.0079" rpy="-0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link botlegasm_2 -->
-    <link name="botlegasm_2">
-        <inertial>
-            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
-            <mass value="0.0546456"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part servo_9 -->
-        <visual>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_9_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part botleg_2 -->
-        <visual>
-            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-            <material name="botleg_2_material">
-                <color rgba="0.87451 0.447059 0.317647 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Joint from toplegasm_2 to botlegasm_2 -->
-    <joint name="BL_BotLeg" type="revolute">
-        <origin xyz="0 0.112 -0" rpy="-3.14159 0 1.5708"/>
-        <parent link="toplegasm_2"/>
-        <child link="botlegasm_2"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
-    </joint>
-    <!-- Joint from mirroredhipsubasm to toplegasm_2 -->
-    <joint name="BL_TopLeg" type="revolute">
-        <origin xyz="-0.02225 0.028265 -0.02" rpy="0 1.5708 0"/>
-        <parent link="mirroredhipsubasm"/>
-        <child link="toplegasm_2"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
-    </joint>
-    <!-- Joint from mainbody to mirroredhipsubasm -->
+
     <joint name="BL_Hip" type="revolute">
         <origin xyz="-0 -0 0.16305" rpy="3.14159 -0 -0"/>
         <parent link="mainbody"/>
-        <child link="mirroredhipsubasm"/>
+        <child link="leg_bl"/>
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
+        <limit effort="50" velocity="20" lower="-1.5708" upper="1.5708"/>
+        <dynamics damping="0.1" friction="0.1"/>
     </joint>
-    <!-- Link mirroredhipsubasm_2 -->
-    <link name="mirroredhipsubasm_2">
-        <inertial>
-            <origin xyz="-0.00448487 0.0179728 -0.0160981" rpy="0 0 0"/>
-            <mass value="0.0661231"/>
-            <inertia ixx="0" ixy="-0" ixz="0" iyy="0" iyz="0" izz="0"/>
-        </inertial>
-        <!-- Part servo_10 -->
-        <visual>
-            <origin xyz="0.0182 0.018115 -0.02" rpy="-0 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_10_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0182 0.018115 -0.02" rpy="-0 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part mirrorhipjoint_2 -->
-        <visual>
-            <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
-            <geometry>
-                <mesh filename="mirrorhipjoint.stl"/>
-            </geometry>
-            <material name="mirrorhipjoint_2_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
-            <geometry>
-                <mesh filename="mirrorhipjoint.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_8 -->
-        <visual>
-            <origin xyz="0 0 0.001" rpy="-3.14159 -0 3.14159"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_8_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0 0.001" rpy="-3.14159 -0 3.14159"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link toplegasm_3 -->
-    <link name="toplegasm_3">
-        <inertial>
-            <origin xyz="-0 0.056 -0.00366855" rpy="0 0 0"/>
-            <mass value="0.025684"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part servohornreplacement_9 -->
-        <visual>
-            <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_9_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part toplegcover_3 -->
-        <visual>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 -0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-            <material name="toplegcover_3_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 -0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_10 -->
-        <visual>
-            <origin xyz="-0 0.112 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_10_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 0.112 -0.0058" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part topleg_3 -->
-        <visual>
-            <origin xyz="-0 0.056 -0.0079" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-            <material name="topleg_3_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 0.056 -0.0079" rpy="0 0 0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link botlegasm_3 -->
-    <link name="botlegasm_3">
-        <inertial>
-            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
-            <mass value="0.0546456"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part servo_11 -->
-        <visual>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_11_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part botleg_3 -->
-        <visual>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-            <material name="botleg_3_material">
-                <color rgba="0.87451 0.447059 0.317647 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Joint from toplegasm_3 to botlegasm_3 -->
-    <joint name="FR_BotLeg" type="revolute">
-        <origin xyz="-0 0.112 0" rpy="-3.14159 -0 1.5708"/>
-        <parent link="toplegasm_3"/>
-        <child link="botlegasm_3"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
-    </joint>
-    <!-- Joint from mirroredhipsubasm_2 to toplegasm_3 -->
-    <joint name="FR_TopLeg" type="revolute">
-        <origin xyz="-0.02225 0.028265 -0.02" rpy="-0 1.5708 0"/>
-        <parent link="mirroredhipsubasm_2"/>
-        <child link="toplegasm_3"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
-    </joint>
-    <!-- Joint from mainbody to mirroredhipsubasm_2 -->
+
     <joint name="FR_Hip" type="revolute">
         <origin xyz="0.1103 -0 0" rpy="0 0 3.14159"/>
         <parent link="mainbody"/>
-        <child link="mirroredhipsubasm_2"/>
+        <child link="leg_fr"/>
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
+        <limit effort="50" velocity="20" lower="-1.5708" upper="1.5708"/>
+        <dynamics damping="0.1" friction="0.1"/>
     </joint>
-    <!-- Joint from hipsubasm to mainbody -->
+
     <joint name="FL_Hip" type="revolute">
         <origin xyz="-0.1742 -0.0237903 0.235556" rpy="1.5708 -0 0"/>
-        <parent link="hipsubasm"/>
-        <child link="mainbody"/>
+        <parent link="mainbody"/>
+        <child link="leg_fl"/>
         <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-0.785398" upper="0.785398"/>
-    </joint>
-    <!-- Link toplegasm_4 -->
-    <link name="toplegasm_4">
-        <inertial>
-            <origin xyz="0 0.056 -0.00366855" rpy="0 0 0"/>
-            <mass value="0.025684"/>
-            <inertia ixx="0" ixy="-0" ixz="0" iyy="0" iyz="0" izz="0"/>
-        </inertial>
-        <!-- Part servohornreplacement_11 -->
-        <visual>
-            <origin xyz="0 -0 -0.0058" rpy="-0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_11_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 -0 -0.0058" rpy="-0 0 0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part toplegcover_4 -->
-        <visual>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-            <material name="toplegcover_4_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="-0 0.056 -0.0079" rpy="1.5708 -0 -0"/>
-            <geometry>
-                <mesh filename="toplegcover.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part servohornreplacement_12 -->
-        <visual>
-            <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-            <material name="servohornreplacement_12_material">
-                <color rgba="0.615686 0.811765 0.929412 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="servohornreplacement.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part topleg_4 -->
-        <visual>
-            <origin xyz="0 0.056 -0.0079" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-            <material name="topleg_4_material">
-                <color rgba="0.231373 0.380392 0.705882 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0 0.056 -0.0079" rpy="-0 -0 -0"/>
-            <geometry>
-                <mesh filename="topleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Link botlegasm_4 -->
-    <link name="botlegasm_4">
-        <inertial>
-            <origin xyz="0.0143552 0 -0.0172417" rpy="0 0 0"/>
-            <mass value="0.0546456"/>
-            <inertia ixx="0" ixy="0" ixz="-0" iyy="0" iyz="-0" izz="0"/>
-        </inertial>
-        <!-- Part servo_12 -->
-        <visual>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-            <material name="servo_12_material">
-                <color rgba="0.301961 0.301961 0.301961 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
-            <geometry>
-                <mesh filename="servo.stl"/>
-            </geometry>
-        </collision>
-        <!-- Part botleg_4 -->
-        <visual>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-            <material name="botleg_4_material">
-                <color rgba="0.87451 0.447059 0.317647 1.0"/>
-            </material>
-        </visual>
-        <collision>
-            <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
-            <geometry>
-                <mesh filename="botleg.stl"/>
-            </geometry>
-        </collision>
-    </link>
-    <!-- Joint from toplegasm_4 to botlegasm_4 -->
-    <joint name="FL_BotLeg" type="revolute">
-        <origin xyz="0 0.112 -0" rpy="3.14159 0 1.5708"/>
-        <parent link="toplegasm_4"/>
-        <child link="botlegasm_4"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-3.141592653589793" upper="3.141592653589793"/>
-    </joint>
-    <!-- Joint from hipsubasm to toplegasm_4 -->
-    <joint name="FL_TopLeg" type="revolute">
-        <origin xyz="-0.19645 -0.00379035 0.207291" rpy="-1.5708 0 -1.5708"/>
-        <parent link="hipsubasm"/>
-        <child link="toplegasm_4"/>
-        <axis xyz="0 0 1"/>
-        <limit effort="1" velocity="1" lower="-1.5708" upper="1.5708"/>
+        <limit effort="50" velocity="20" lower="-1.5708" upper="1.5708"/>
+        <dynamics damping="0.1" friction="0.1"/>
     </joint>
 </robot>
