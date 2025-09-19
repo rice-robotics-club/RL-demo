@@ -37,6 +37,40 @@ Goal Structure:
  
  '''
 
+# --- Helpful functions ---
+def get_min_z(urdf_path):
+    """
+    Loads a URDF and returns the smallest Z coordinate of its combined bounding box.
+    """
+    p.connect(p.DIRECT)
+    # Load the URDF file
+    try:
+        robot_id = p.loadURDF(urdf_path)
+    except p.error as e:
+        p.disconnect()
+        raise FileNotFoundError(f"Failed to load URDF: {urdf_path}. Error: {e}")
+
+    # Initialize min_z to a very large value
+    min_z = 10
+
+    # The base of the model is treated as link -1
+    # Then, iterate through all other links (joints)
+    num_joints = p.getNumJoints(robot_id)
+    link_indices = [-1] + list(range(num_joints))
+
+    for link_index in link_indices:
+        # getAABB returns (min_coords, max_coords)
+        aabb = p.getAABB(robot_id, link_index)
+        aabb_min = aabb[0]
+        current_min_z = aabb_min[2] # Z is the third coordinate (index 2)
+
+        # Update the overall minimum Z value if the current link is lower
+        if current_min_z < min_z:
+            min_z = current_min_z
+    p.disconnect()
+    return min_z
+
+
 # --- Custom Gymnasium Environment for the Quadruped ---
 class QuadrupedEnv(gym.Env):
     """
@@ -46,7 +80,7 @@ class QuadrupedEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
     # Change: init now accepts a target box (center and size).
-    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", 
+    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", start_position=[0, 0, 1],
                  target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
         super(QuadrupedEnv, self).__init__()
         self.urdf_filename = urdf_filename
@@ -58,10 +92,10 @@ class QuadrupedEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 30.0  # Slightly longer to allow exploration
+        self.episode_duration = 3.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 200.0
-        self.action_skip = 4
+        self.action_force_limit = 0.1
+        self.action_skip = 240
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
         self.GOAL_APPROACH_WEIGHT = 5.0
@@ -81,10 +115,12 @@ class QuadrupedEnv(gym.Env):
         p.setPhysicsEngineParameter(fixedTimeStep=self.time_step)
         self.plane_id = p.loadURDF("plane.urdf")
         
-        start_position = [0, 0, 1.0]
-        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
-        self.robot_id = p.loadURDF(self.urdf_filename, start_position, start_orientation, useFixedBase=False)
 
+        start_orientation = p.getQuaternionFromEuler([0, 0, 0])
+        self.start_position = start_position
+        self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False)
+        
+        self.start_position = start_position
         # New: create the target box.
         self.target_box_center = np.array(target_box_center, dtype=np.float32)
         self.target_box_size = np.array(target_box_size, dtype=np.float32)
@@ -134,7 +170,7 @@ class QuadrupedEnv(gym.Env):
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
-        start_position = [0, 0, 1.0]
+        start_position = self.start_position
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         p.resetBasePositionAndOrientation(self.robot_id, start_position, start_orientation)
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
@@ -208,7 +244,6 @@ class QuadrupedEnv(gym.Env):
                     step_reward = -self.FALLEN_PENALTY 
                     total_reward += step_reward
                     terminated = False        # Added: do not terminate here
-                    break 
 
                 total_reward += step_reward
 
