@@ -1,8 +1,3 @@
-'''
-Universal environment for training, testing, simulating, and running quadruped robots in PyBullet using OpenAI Gym interface.
-
-'''
-
 # This script sets up a PyBullet-based reinforcement learning environment for a
 # simple quadruped robot. The task is to reach and touch a green target box
 # (specified by its center and size) within one episode (~30s by default),
@@ -26,6 +21,22 @@ from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
+
+'''
+Goal Structure:
+ _____________________      _______________
+| run_trained_quad.py |    | train_quad.py |
+ ----------------------      -------------
+        \   ______________         / 
+           quadruped_env.py
+           ----------------
+                     \ 
+                       \  ______
+                        | env.py |
+                         --------
+ 
+ '''
+
 # --- Custom Gymnasium Environment for the Quadruped ---
 class QuadrupedEnv(gym.Env):
     """
@@ -40,7 +51,6 @@ class QuadrupedEnv(gym.Env):
         super(QuadrupedEnv, self).__init__()
         self.urdf_filename = urdf_filename
 
-        # Connect to the PyBullet physics server
         if render_mode == 'human':
             self.physics_client = p.connect(p.GUI)
         else:
@@ -69,8 +79,6 @@ class QuadrupedEnv(gym.Env):
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
         p.setPhysicsEngineParameter(fixedTimeStep=self.time_step)
-
-        # Load the ground plane
         self.plane_id = p.loadURDF("plane.urdf")
         
         start_position = [0, 0, 1.0]
@@ -107,9 +115,6 @@ class QuadrupedEnv(gym.Env):
         self.render_mode = render_mode
 
     def _get_obs(self):
-        """
-        Get the current observation of the environment.
-        """
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = [state[0] for state in joint_states]
         joint_velocities = [state[1] for state in joint_states]
@@ -127,9 +132,6 @@ class QuadrupedEnv(gym.Env):
         return obs.astype(np.float32)
 
     def reset(self, seed=None, options=None):
-        """
-        Reset the simulation to its initial state.
-        """
         super().reset(seed=seed)
         
         start_position = [0, 0, 1.0]
@@ -138,13 +140,10 @@ class QuadrupedEnv(gym.Env):
         p.resetBaseVelocity(self.robot_id, linearVelocity=[0,0,0], angularVelocity=[0,0,0])
 
         for joint_index in self.joint_indices:
-            # Reset joint to position 0 with 0 velocity
             p.resetJointState(self.robot_id, joint_index, targetValue=0, targetVelocity=0)
-            # Re-apply motor control
             p.setJointMotorControl2(
                 self.robot_id, joint_index, p.POSITION_CONTROL, targetPosition=0, force=self.action_force_limit
             )
-        # ----------------------------------------------------
 
         self.steps_taken = 0
         
@@ -260,3 +259,36 @@ class QuadrupedEnv(gym.Env):
 
     def close(self):
         p.disconnect()
+
+if __name__ == "__main__":
+    urdf_file = "simple_quadruped.urdf"
+
+    # Set target box center [x, y] and size [width, depth, height].
+    box_center = [12.0, 3.0]
+    box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
+
+    # Pass box parameters into the environment.
+    env = QuadrupedEnv(
+        render_mode='human', 
+        urdf_filename=urdf_file, 
+        target_box_center=box_center,
+        target_box_size=box_size
+    )
+    
+    model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
+
+    checkpoint_callback = CheckpointCallback(
+        save_freq=10000,
+        save_path='./servobot_checkpoints_box/',
+        name_prefix='servobot_model_box'
+    )
+    
+    print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
+    try:
+        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
+    except KeyboardInterrupt:
+        print("Training stopped by user.")
+    finally:
+        env.close()
+    
+    print("Training finished.")
