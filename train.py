@@ -16,9 +16,11 @@ from src.env import QuadrupedEnv ,get_min_z
 if __name__ == "__main__":
     # To use a different robot, change the filename here
     urdf_file = "full_servobot/catbot.urdf" 
+    # urdf_file = "simple_quadruped.urdf" 
     # Create the environment. Stable-baselines will automatically call reset.
     min_z = get_min_z(urdf_file)
-    start_position = [0, 0, 1e-6 - min_z]
+    start_position = [0, 0, -min_z]
+    print(f"min_z is: {min_z}")
     env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file,start_position=start_position)
     
     # Define the PPO agent from stable-baselines3

@@ -94,7 +94,7 @@ class QuadrupedEnv(gym.Env):
         self.time_step = 1.0 / 240.0
         self.episode_duration = 3.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 0.1
+        self.action_force_limit = 2
         self.action_skip = 240
 
         # --- REWARD WEIGHTS (TUNE THESE) ---
@@ -120,7 +120,8 @@ class QuadrupedEnv(gym.Env):
         self.start_position = start_position
         self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False)
         
-        self.start_position = start_position
+        base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+        self.start_position = base_pos
         # New: create the target box.
         self.target_box_center = np.array(target_box_center, dtype=np.float32)
         self.target_box_size = np.array(target_box_size, dtype=np.float32)

@@ -97,4 +97,5 @@ def run_simulation(start_position,urdf_path="simple_quadruped.urdf"):
 if __name__ == "__main__":
     urdf_file = "full_servobot/catbot.urdf"
     min_z = get_min_z(urdf_file)
-    run_simulation(start_position=[0, 0, -0.2 - min_z],urdf_path=urdf_file)
+    print(f"min_z is: {min_z}")
+    run_simulation(start_position=[0, 0, -min_z],urdf_path=urdf_file)
