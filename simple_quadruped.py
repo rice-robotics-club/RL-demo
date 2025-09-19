@@ -5,10 +5,12 @@ import pybullet as p
 import pybullet_data
 import time
 import math
-
+from src.env import get_min_z
 # --- Start of the main script ---
 
-def run_simulation():
+
+
+def run_simulation(start_position,urdf_path="simple_quadruped.urdf"):
     """
     Main function to set up and run the PyBullet simulation.
     """
@@ -24,11 +26,11 @@ def run_simulation():
 
     # 3. Load the robot leg model.
     # The URDF file for the quadruped is now named 'simple_quadruped.urdf'.
+    
     try:
-        # Set the starting position to be 1.0 meter high.
-        start_position = [0, 0, 1.0]
+        start_orientation = p.getQuaternionFromEuler([0, 0, 0]) # Euler is angles of rotation about x,y,z axes
         # useFixedBase=True to start, but you can set to False to test the full dynamic model
-        robot_id = p.loadURDF("simple_quadruped.urdf", start_position, useFixedBase=False)
+        robot_id = p.loadURDF(urdf_path, start_position, start_orientation,useFixedBase=False)
     except p.error as e:
         print(f"Error loading URDF file: {e}")
         print("Please ensure 'simple_quadruped.urdf' exists in the same directory or provide the correct path.")
@@ -63,7 +65,8 @@ def run_simulation():
             # Use a sine wave to create a smooth back-and-forth motion.
             # The angle will oscillate between -pi/2 and +pi/2 radians (-90 to +90 degrees).
             elapsed_time = time.time() - start_time
-            target_angle = math.sin(elapsed_time * 2) * (math.pi / 2)
+            # target_angle = math.sin(elapsed_time * 2) * (math.pi / 2)
+            target_angle = 0
 
             # Control all found revolute joints with the same target angle.
             for joint_index in joint_indices:
@@ -72,7 +75,7 @@ def run_simulation():
                     jointIndex=joint_index,
                     controlMode=p.POSITION_CONTROL,
                     targetPosition=target_angle,
-                    force=20
+                    force=200
                 )
 
             # Step the simulation forward.
@@ -92,4 +95,7 @@ def run_simulation():
         print("PyBullet client disconnected.")
 
 if __name__ == "__main__":
-    run_simulation()
+    urdf_file = "full_servobot/catbot.urdf"
+    min_z = get_min_z(urdf_file)
+    print(f"min_z is: {min_z}")
+    run_simulation(start_position=[0, 0, -min_z],urdf_path=urdf_file)

@@ -3,7 +3,7 @@
     <parent link="base_link"/>
     <child link="thigh_fl"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.57" upper="1.57" effort="50" velocity="10"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="0.1"/>
     <origin rpy="0 0 0" xyz="0.5 0.5 0"/>
 </joint>
 <link name="thigh_fl">
@@ -33,7 +33,7 @@
     <parent link="base_link"/>
     <child link="thigh_fr"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.57" upper="1.57" effort="50" velocity="10"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="0.1"/>
     <origin rpy="0 0 0" xyz="0.5 -0.5 0"/>
 </joint>
 <link name="thigh_fr">
@@ -63,7 +63,7 @@
     <parent link="base_link"/>
     <child link="thigh_bl"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.57" upper="1.57" effort="50" velocity="10"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="0.1"/>
     <origin rpy="0 0 0" xyz="-0.5 0.5 0"/>
 </joint>
 <link name="thigh_bl">
@@ -93,7 +93,7 @@
     <parent link="base_link"/>
     <child link="thigh_br"/>
     <axis xyz="1 0 0"/>
-    <limit lower="-1.57" upper="1.57" effort="50" velocity="10"/>
+    <limit lower="-1.57" upper="1.57" effort="50" velocity="0.1"/>
     <origin rpy="0 0 0" xyz="-0.5 -0.5 0"/>
 </joint>
 <link name="thigh_br">

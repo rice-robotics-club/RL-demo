@@ -11,13 +11,17 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 # Our custom environment class
-from src.env import QuadrupedEnv
+from src.env import QuadrupedEnv ,get_min_z
 
 if __name__ == "__main__":
     # To use a different robot, change the filename here
-    urdf_file = "servobot/servobot.urdf" 
+    urdf_file = "full_servobot/catbot.urdf" 
+    # urdf_file = "simple_quadruped.urdf" 
     # Create the environment. Stable-baselines will automatically call reset.
-    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
+    min_z = get_min_z(urdf_file)
+    start_position = [0, 0, -min_z]
+    print(f"min_z is: {min_z}")
+    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file,start_position=start_position)
     
     # Define the PPO agent from stable-baselines3
     model = PPO("MlpPolicy", env, verbose=1,n_steps=1024)

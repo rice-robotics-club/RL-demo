@@ -13,7 +13,7 @@
         <visual>
             <origin xyz="-0.1642 -0.00754035 0.218266" rpy="0 0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/hipjoint.stl"/>
+                <mesh filename="hipjoint.stl"/>
             </geometry>
             <material name="hipjoint_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -22,14 +22,14 @@
         <collision>
             <origin xyz="-0.1642 -0.00754035 0.218266" rpy="0 0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/hipjoint.stl"/>
+                <mesh filename="hipjoint.stl"/>
             </geometry>
         </collision>
         <!-- Part servo -->
         <visual>
             <origin xyz="-0.156 -0.00379035 0.217441" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -38,14 +38,14 @@
         <collision>
             <origin xyz="-0.156 -0.00379035 0.217441" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement -->
         <visual>
             <origin xyz="-0.1742 -0.0247903 0.235556" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -54,7 +54,7 @@
         <collision>
             <origin xyz="-0.1742 -0.0247903 0.235556" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
     </link>
@@ -69,7 +69,7 @@
         <visual>
             <origin xyz="0.13515 0.021 0.156525" rpy="-1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/base.stl"/>
+                <mesh filename="base.stl"/>
             </geometry>
             <material name="base_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -78,14 +78,14 @@
         <collision>
             <origin xyz="0.13515 0.021 0.156525" rpy="-1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/base.stl"/>
+                <mesh filename="base.stl"/>
             </geometry>
         </collision>
         <!-- Part servo_2 -->
         <visual>
             <origin xyz="0.01015 -0 0.1168" rpy="-1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_2_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -94,14 +94,14 @@
         <collision>
             <origin xyz="0.01015 -0 0.1168" rpy="-1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part servo_3 -->
         <visual>
             <origin xyz="0.01015 -0 0.04625" rpy="1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_3_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -110,14 +110,14 @@
         <collision>
             <origin xyz="0.01015 -0 0.04625" rpy="1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part servo_4 -->
         <visual>
             <origin xyz="0.10015 -0 0.04625" rpy="1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_4_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -126,14 +126,14 @@
         <collision>
             <origin xyz="0.10015 -0 0.04625" rpy="1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part servo_5 -->
         <visual>
             <origin xyz="0.10015 -0 0.1168" rpy="-1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_5_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -142,7 +142,7 @@
         <collision>
             <origin xyz="0.10015 -0 0.1168" rpy="-1.5708 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
     </link>
@@ -157,7 +157,7 @@
         <visual>
             <origin xyz="0.01 -0.01729 -0.01625" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/hipjoint.stl"/>
+                <mesh filename="hipjoint.stl"/>
             </geometry>
             <material name="hipjoint_2_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -166,14 +166,14 @@
         <collision>
             <origin xyz="0.01 -0.01729 -0.01625" rpy="-1.5708 -1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/hipjoint.stl"/>
+                <mesh filename="hipjoint.stl"/>
             </geometry>
         </collision>
         <!-- Part servo_6 -->
         <visual>
             <origin xyz="0.0182 -0.018115 -0.02" rpy="3.14159 -0 1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_6_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -182,14 +182,14 @@
         <collision>
             <origin xyz="0.0182 -0.018115 -0.02" rpy="3.14159 -0 1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_2 -->
         <visual>
             <origin xyz="-0 -0 0.001" rpy="-3.14159 -0 1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_2_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -198,7 +198,7 @@
         <collision>
             <origin xyz="-0 -0 0.001" rpy="-3.14159 -0 1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
     </link>
@@ -213,7 +213,7 @@
         <visual>
             <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_3_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -222,14 +222,14 @@
         <collision>
             <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part toplegcover -->
         <visual>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
             <material name="toplegcover_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -238,14 +238,14 @@
         <collision>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_4 -->
         <visual>
             <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_4_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -254,14 +254,14 @@
         <collision>
             <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part topleg -->
         <visual>
             <origin xyz="0 0.056 -0.0079" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
             <material name="topleg_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -270,7 +270,7 @@
         <collision>
             <origin xyz="0 0.056 -0.0079" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
         </collision>
     </link>
@@ -285,7 +285,7 @@
         <visual>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_7_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -294,14 +294,14 @@
         <collision>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part botleg -->
         <visual>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
             <material name="botleg_material">
                 <color rgba="0.87451 0.447059 0.317647 1.0"/>
@@ -310,8 +310,9 @@
         <collision>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm to botlegasm -->
@@ -320,7 +321,7 @@
         <parent link="toplegasm"/>
         <child link="botlegasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1.8" velocity="6" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from hipsubasm_2 to toplegasm -->
     <joint name="BR_TopLeg" type="revolute">
@@ -328,7 +329,7 @@
         <parent link="hipsubasm_2"/>
         <child link="toplegasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1.8" velocity="6" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to hipsubasm_2 -->
     <joint name="BR_Hip" type="revolute">
@@ -336,7 +337,7 @@
         <parent link="mainbody"/>
         <child link="hipsubasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1.8" velocity="6" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link mirroredhipsubasm -->
     <link name="mirroredhipsubasm">
@@ -349,7 +350,7 @@
         <visual>
             <origin xyz="0.0182 0.018115 -0.02" rpy="0 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_8_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -358,14 +359,14 @@
         <collision>
             <origin xyz="0.0182 0.018115 -0.02" rpy="0 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part mirrorhipjoint -->
         <visual>
             <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/mirrorhipjoint.stl"/>
+                <mesh filename="mirrorhipjoint.stl"/>
             </geometry>
             <material name="mirrorhipjoint_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -374,14 +375,14 @@
         <collision>
             <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/mirrorhipjoint.stl"/>
+                <mesh filename="mirrorhipjoint.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_5 -->
         <visual>
             <origin xyz="0 0 0.001" rpy="-3.14159 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_5_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -390,7 +391,7 @@
         <collision>
             <origin xyz="0 0 0.001" rpy="-3.14159 0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
     </link>
@@ -405,7 +406,7 @@
         <visual>
             <origin xyz="0 0 -0.0058" rpy="0 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_6_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -414,14 +415,14 @@
         <collision>
             <origin xyz="0 0 -0.0058" rpy="0 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part toplegcover_2 -->
         <visual>
             <origin xyz="0 0.056 -0.0079" rpy="1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
             <material name="toplegcover_2_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -430,14 +431,14 @@
         <collision>
             <origin xyz="0 0.056 -0.0079" rpy="1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_7 -->
         <visual>
             <origin xyz="0 0.112 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_7_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -446,14 +447,14 @@
         <collision>
             <origin xyz="0 0.112 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part topleg_2 -->
         <visual>
             <origin xyz="0 0.056 -0.0079" rpy="-0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
             <material name="topleg_2_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -462,7 +463,7 @@
         <collision>
             <origin xyz="0 0.056 -0.0079" rpy="-0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
         </collision>
     </link>
@@ -477,7 +478,7 @@
         <visual>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_9_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -486,14 +487,14 @@
         <collision>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part botleg_2 -->
         <visual>
             <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
             <material name="botleg_2_material">
                 <color rgba="0.87451 0.447059 0.317647 1.0"/>
@@ -502,8 +503,9 @@
         <collision>
             <origin xyz="0.0316745 0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_2 to botlegasm_2 -->
@@ -512,7 +514,7 @@
         <parent link="toplegasm_2"/>
         <child link="botlegasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1.8" velocity="6" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from mirroredhipsubasm to toplegasm_2 -->
     <joint name="BL_TopLeg" type="revolute">
@@ -520,7 +522,7 @@
         <parent link="mirroredhipsubasm"/>
         <child link="toplegasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1.8" velocity="6" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to mirroredhipsubasm -->
     <joint name="BL_Hip" type="revolute">
@@ -528,7 +530,7 @@
         <parent link="mainbody"/>
         <child link="mirroredhipsubasm"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1.8" velocity="6" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link mirroredhipsubasm_2 -->
     <link name="mirroredhipsubasm_2">
@@ -541,7 +543,7 @@
         <visual>
             <origin xyz="0.0182 0.018115 -0.02" rpy="-0 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_10_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -550,14 +552,14 @@
         <collision>
             <origin xyz="0.0182 0.018115 -0.02" rpy="-0 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part mirrorhipjoint_2 -->
         <visual>
             <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/mirrorhipjoint.stl"/>
+                <mesh filename="mirrorhipjoint.stl"/>
             </geometry>
             <material name="mirrorhipjoint_2_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -566,14 +568,14 @@
         <collision>
             <origin xyz="0.01 0.01729 -0.02375" rpy="1.5708 1.5708 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/mirrorhipjoint.stl"/>
+                <mesh filename="mirrorhipjoint.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_8 -->
         <visual>
             <origin xyz="0 0 0.001" rpy="-3.14159 -0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_8_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -582,7 +584,7 @@
         <collision>
             <origin xyz="0 0 0.001" rpy="-3.14159 -0 3.14159"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
     </link>
@@ -597,7 +599,7 @@
         <visual>
             <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_9_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -606,14 +608,14 @@
         <collision>
             <origin xyz="0 0 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part toplegcover_3 -->
         <visual>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
             <material name="toplegcover_3_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -622,14 +624,14 @@
         <collision>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_10 -->
         <visual>
             <origin xyz="-0 0.112 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_10_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -638,14 +640,14 @@
         <collision>
             <origin xyz="-0 0.112 -0.0058" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part topleg_3 -->
         <visual>
             <origin xyz="-0 0.056 -0.0079" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
             <material name="topleg_3_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -654,7 +656,7 @@
         <collision>
             <origin xyz="-0 0.056 -0.0079" rpy="0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
         </collision>
     </link>
@@ -669,7 +671,7 @@
         <visual>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_11_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -678,14 +680,14 @@
         <collision>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part botleg_3 -->
         <visual>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
             <material name="botleg_3_material">
                 <color rgba="0.87451 0.447059 0.317647 1.0"/>
@@ -694,8 +696,9 @@
         <collision>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_3 to botlegasm_3 -->
@@ -704,7 +707,7 @@
         <parent link="toplegasm_3"/>
         <child link="botlegasm_3"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1.8" velocity="6" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from mirroredhipsubasm_2 to toplegasm_3 -->
     <joint name="FR_TopLeg" type="revolute">
@@ -712,7 +715,7 @@
         <parent link="mirroredhipsubasm_2"/>
         <child link="toplegasm_3"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1.8" velocity="6" lower="-1.5708" upper="1.5708"/>
     </joint>
     <!-- Joint from mainbody to mirroredhipsubasm_2 -->
     <joint name="FR_Hip" type="revolute">
@@ -720,7 +723,7 @@
         <parent link="mainbody"/>
         <child link="mirroredhipsubasm_2"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1.8" velocity="6" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Joint from hipsubasm to mainbody -->
     <joint name="FL_Hip" type="revolute">
@@ -728,7 +731,7 @@
         <parent link="hipsubasm"/>
         <child link="mainbody"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-0.785398" upper="0.785398"/>
+        <limit effort="1.8" velocity="6" lower="-0.785398" upper="0.785398"/>
     </joint>
     <!-- Link toplegasm_4 -->
     <link name="toplegasm_4">
@@ -741,7 +744,7 @@
         <visual>
             <origin xyz="0 -0 -0.0058" rpy="-0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_11_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -750,14 +753,14 @@
         <collision>
             <origin xyz="0 -0 -0.0058" rpy="-0 0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part toplegcover_4 -->
         <visual>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
             <material name="toplegcover_4_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -766,14 +769,14 @@
         <collision>
             <origin xyz="-0 0.056 -0.0079" rpy="1.5708 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/toplegcover.stl"/>
+                <mesh filename="toplegcover.stl"/>
             </geometry>
         </collision>
         <!-- Part servohornreplacement_12 -->
         <visual>
             <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
             <material name="servohornreplacement_12_material">
                 <color rgba="0.615686 0.811765 0.929412 1.0"/>
@@ -782,14 +785,14 @@
         <collision>
             <origin xyz="0 0.112 -0.0058" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servohornreplacement.stl"/>
+                <mesh filename="servohornreplacement.stl"/>
             </geometry>
         </collision>
         <!-- Part topleg_4 -->
         <visual>
             <origin xyz="0 0.056 -0.0079" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
             <material name="topleg_4_material">
                 <color rgba="0.231373 0.380392 0.705882 1.0"/>
@@ -798,7 +801,7 @@
         <collision>
             <origin xyz="0 0.056 -0.0079" rpy="-0 -0 -0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/topleg.stl"/>
+                <mesh filename="topleg.stl"/>
             </geometry>
         </collision>
     </link>
@@ -813,7 +816,7 @@
         <visual>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
             <material name="servo_12_material">
                 <color rgba="0.301961 0.301961 0.301961 1.0"/>
@@ -822,14 +825,14 @@
         <collision>
             <origin xyz="0.01015 0 -0.04045" rpy="-1.5708 -0 0"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/servo.stl"/>
+                <mesh filename="servo.stl"/>
             </geometry>
         </collision>
         <!-- Part botleg_4 -->
         <visual>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
             <material name="botleg_4_material">
                 <color rgba="0.87451 0.447059 0.317647 1.0"/>
@@ -838,8 +841,9 @@
         <collision>
             <origin xyz="0.0316745 -0 0" rpy="1.5708 -0 -1.5708"/>
             <geometry>
-                <mesh filename="package://catbot_pybullet/meshes/botleg.stl"/>
+                <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_4 to botlegasm_4 -->
@@ -848,7 +852,7 @@
         <parent link="toplegasm_4"/>
         <child link="botlegasm_4"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-3.141592653589793" upper="3.141592653589793"/>
+        <limit effort="1.8" velocity="6" lower="-3.141592653589793" upper="3.141592653589793"/>
     </joint>
     <!-- Joint from hipsubasm to toplegasm_4 -->
     <joint name="FL_TopLeg" type="revolute">
@@ -856,6 +860,6 @@
         <parent link="hipsubasm"/>
         <child link="toplegasm_4"/>
         <axis xyz="0 0 1"/>
-        <limit effort="10" velocity="10" lower="-1.5708" upper="1.5708"/>
+        <limit effort="1.8" velocity="6" lower="-1.5708" upper="1.5708"/>
     </joint>
 </robot>
