@@ -312,6 +312,7 @@
             <geometry>
                 <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm to botlegasm -->
@@ -504,6 +505,7 @@
             <geometry>
                 <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_2 to botlegasm_2 -->
@@ -696,6 +698,7 @@
             <geometry>
                 <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_3 to botlegasm_3 -->
@@ -840,6 +843,7 @@
             <geometry>
                 <mesh filename="botleg.stl"/>
             </geometry>
+            <contact_coefficients mu="0.8" />
         </collision>
     </link>
     <!-- Joint from toplegasm_4 to botlegasm_4 -->
