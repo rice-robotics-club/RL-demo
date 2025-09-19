@@ -24,16 +24,16 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 
 '''
 Goal Structure:
- _____________________      _______________
-| run_trained_quad.py |    | train_quad.py |
- ----------------------      -------------
-        \   ______________         / 
-           quadruped_env.py
-           ----------------
-                     \ 
-                       \  ______
-                        | env.py |
-                         --------
+ _____________________      _______________      _____________________      _______________ 
+| run_trained_quad.py |    | train_quad.py |    | run_trained_servo.py |    | train_servo.py | 
+ ----------------------      -------------      ----------------------      -------------
+        \   ______________  /                      \     ______________     /
+           quadruped_env.py                            | servobot_env.py |
+           ----------------                             ----------------
+                     \ _________________          ____________/
+                                        \ ______ /
+                                        | env.py |
+                                         --------
  
  '''
 
