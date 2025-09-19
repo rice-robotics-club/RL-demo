@@ -15,7 +15,7 @@ from src.env import QuadrupedEnv
 
 if __name__ == "__main__":
     # To use a different robot, change the filename here
-    urdf_file = "servobot/servobot.urdf" 
+    urdf_file = "full_servobot/catbot.urdf" 
     # Create the environment. Stable-baselines will automatically call reset.
     env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
     
