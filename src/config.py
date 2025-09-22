@@ -16,19 +16,19 @@ HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
 
 ROBOTS = {
     'simple_quadruped': {
-        'urdf_file': "simple_quadruped.urdf",
-        'save_path': './quadruped_checkpoints/',
+        'urdf_file': "robots/simple_quadruped.urdf",
+        'save_path': 'models/quadruped_checkpoints/',
         'save_prefix': 'quadruped_model',
         
     },
     'servobot': {
-        'urdf_file': "servobot/catbot.urdf",
-        'save_path': './servobot_checkpoints/',
+        'urdf_file': "robots/full_servobot/catbot.urdf",
+        'save_path': 'models/servobot_checkpoints/',
         'save_prefix': 'servobot_model'
     },
     'servobot_box': {
-        'urdf_file': "full_servobot/catbot.urdf",
-        'save_path': './servobot_checkpoints_box/',
+        'urdf_file': "robots/full_servobot/catbot.urdf",
+        'save_path': 'models/servobot_checkpoints_box/',
         'save_prefix': 'servobot_box_model'
     }
 }

@@ -1,4 +1,4 @@
-from code_archive.train import QuadrupedEnv
+from src.env import BaseEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 import os
@@ -16,7 +16,7 @@ if __name__ == "__main__":
     urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
     # Create the environment. Stable-baselines will automatically call reset.
-    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
+    env = BaseEnv(render_mode='human', urdf_filename=urdf_file)
 
     # check to make sure we didnt forget to import a model lmao
     if not os.path.exists(model_path):
