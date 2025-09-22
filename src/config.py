@@ -1,4 +1,4 @@
-
+import os
 
 # --- REWARD WEIGHTS (TUNE THESE) ---
 GOAL_APPROACH_WEIGHT = 5.0
@@ -12,3 +12,23 @@ FORWARD_VEL_WEIGHT = 3.0
 # New: discourage jumping/high vertical motion.
 JUMP_PENALTY_WEIGHT = 0.2     # Penalize excessive vertical velocity
 HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
+
+
+ROBOTS = {
+    'simple_quadruped': {
+        'urdf_file': "simple_quadruped.urdf",
+        'save_path': './quadruped_checkpoints/',
+        'save_prefix': 'quadruped_model',
+        
+    },
+    'servobot': {
+        'urdf_file': "servobot/catbot.urdf",
+        'save_path': './servobot_checkpoints/',
+        'save_prefix': 'servobot_model'
+    },
+    'servobot_box': {
+        'urdf_file': "full_servobot/catbot.urdf",
+        'save_path': './servobot_checkpoints_box/',
+        'save_prefix': 'servobot_box_model'
+    }
+}

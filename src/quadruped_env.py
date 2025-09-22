@@ -1,5 +1,10 @@
 from .env import BaseEnv
 
+''' 
+Currently there is no reason to use these specialized environments over 
+the base one but i imagine if we start doing more complex stuff then it might be useful. -clay
+'''
+
 class QuadrupedEnv(BaseEnv):
     def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", start_position=[0, 0, 1],
                     target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):

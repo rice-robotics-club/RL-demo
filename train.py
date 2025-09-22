@@ -1,43 +1,54 @@
-# This script sets up a reinforcement learning environment to train a simple quadruped robot
-# to move as far as possible in 10 seconds. It uses the PyBullet physics engine for the
-# simulation and the stable-baselines3 library for the RL agent.
+# This script sets up a PyBullet-based reinforcement learning environment for a
+# simple quadruped robot. The task is to reach and touch a green target box
+# (specified by its center and size) within one episode (~30s by default),
+# while staying upright and avoiding jumping.
 #
-# To run this script, you'll need to install the required libraries:
-# pip install pybullet gymnasium stable-baselines3[extra]
+# Dependencies:
+#   pip install pybullet gymnasium stable-baselines3[extra]
 #
-# The script now assumes that 'simple_quadruped.urdf' exists in the same directory.
+# Notes:
+# - The URDF file 'simple_quadruped.urdf' must be in the same directory.
+# - Uses Stable-Baselines3 PPO as the baseline RL agent.
 
+import os
+import time
+import math
+import numpy as np
+import pybullet as p
+import pybullet_data
+import gymnasium as gym
+from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
-
-# Our custom environment class
-from src.quadruped_env import QuadrupedEnv
-from src.env import get_min_z
+from src import utils, env
 
 if __name__ == "__main__":
-    # To use a different robot, change the filename here
-    urdf_file = "full_servobot/catbot.urdf" 
-    # urdf_file = "simple_quadruped.urdf" 
-    # Create the environment. Stable-baselines will automatically call reset.
-    min_z = get_min_z(urdf_file)
-    start_position = [0, 0, -min_z]
-    print(f"min_z is: {min_z}")
-    env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file,start_position=start_position)
-    
-    # Define the PPO agent from stable-baselines3
-    model = PPO("MlpPolicy", env, verbose=1,n_steps=1024)
 
-    # Setup Checkpoint Callback to save the model every 10,000 steps
-    checkpoint_callback = CheckpointCallback(
-        save_freq=100000,
-        save_path='./servobot_checkpoints/',
-        name_prefix='servobot_model'
+    urdf_file, save_path, save_prefix, model_path = utils.select_robot()
+
+    # Set target box center [x, y] and size [width, depth, height].
+    box_center = [12.0, 3.0]
+    box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
+
+    # Pass box parameters into the environment.
+    env = env.BaseEnv(
+        render_mode='headless', 
+        urdf_filename=urdf_file, 
+        target_box_center=box_center,
+        target_box_size=box_size
     )
     
-    # Train the agent for a number of timesteps
-    print("Starting training...")
+    model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
+
+    checkpoint_callback = CheckpointCallback(
+        save_freq=100000,
+        save_path=save_path,
+        name_prefix=save_prefix
+    )
+    
+    print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
-        model.learn(total_timesteps=1000000, callback=checkpoint_callback)
+        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
     finally:

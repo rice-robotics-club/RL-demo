@@ -22,7 +22,7 @@ from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
-from . import config
+from . import config, utils
 
 
 '''
@@ -101,27 +101,11 @@ class BaseEnv(gym.Env):
         self.action_force_limit = 2
         self.action_skip = 240
         
-        def load_param(name, default):
-            return getattr(config, name, default)
-         
-        def load_all_params():
-            params = {
-                "FORWARD_VEL_WEIGHT": load_param("FORWARD_VEL_WEIGHT", 1.0),
-                "UPRIGHT_REWARD_WEIGHT": load_param("UPRIGHT_REWARD_WEIGHT", 0.5),
-                "ACTION_PENALTY_WEIGHT": load_param("ACTION_PENALTY_WEIGHT", 0.01),
-                "SHAKE_PENALTY_WEIGHT": load_param("SHAKE_PENALTY_WEIGHT", 0.01),
-                "JUMP_PENALTY_WEIGHT": load_param("JUMP_PENALTY_WEIGHT", 5.0),
-                "HIGH_ALTITUDE_PENALTY_WEIGHT": load_param("HIGH_ALTITUDE_PENALTY_WEIGHT", 2.0),
-                "FALLEN_PENALTY": load_param("FALLEN_PENALTY", 20.0),
-                "GOAL_APPROACH_WEIGHT": load_param("GOAL_APPROACH_WEIGHT", 2.0),
-                "GOAL_REACHED_BONUS": load_param("GOAL_REACHED_BONUS", 100.0)
-            }
-            for param, value in params.items():
+        params = utils.load_all_params()
+        for param, value in params.items():
                 setattr(self, param, value)
-            return params
-        
         # load parameters from config.py
-        load_all_params()
+        
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)

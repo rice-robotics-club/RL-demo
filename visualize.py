@@ -1,7 +1,8 @@
-from train import QuadrupedEnv
+from code_archive.train import QuadrupedEnv
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 import os
+from src import utils
 
 '''
 This script is a mismash of the quadreped run_trained.py and the servobot train.py scripts to load and run a trained servobot model
@@ -11,9 +12,8 @@ but we could prolly get some better results if we ran it longer.
 
 if __name__ == "__main__":
     # To use a different robot, change the filename here
-    urdf_file = "servobot/servobot.urdf"
 
-    model_path = "./servobot_checkpoints/servobot_model_500000_steps.zip"
+    urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
     # Create the environment. Stable-baselines will automatically call reset.
     env = QuadrupedEnv(render_mode='human', urdf_filename=urdf_file)
