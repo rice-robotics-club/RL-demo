@@ -13,6 +13,7 @@
 import os
 import time
 import math
+import json
 import numpy as np
 import pybullet as p
 import pybullet_data
@@ -20,6 +21,8 @@ import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
+
+from . import config
 
 
 '''
@@ -71,8 +74,8 @@ def get_min_z(urdf_path):
     return min_z
 
 
-# --- Custom Gymnasium Environment for the Quadruped ---
-class QuadrupedEnv(gym.Env):
+# --- Custom Gymnasium Environment for our Robots ---
+class BaseEnv(gym.Env):
     """
     A custom environment that wraps the PyBullet simulation for
     reinforcement learning.
@@ -82,9 +85,10 @@ class QuadrupedEnv(gym.Env):
     # Change: init now accepts a target box (center and size).
     def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", start_position=[0, 0, 1],
                  target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
-        super(QuadrupedEnv, self).__init__()
+        super(BaseEnv, self).__init__()
         self.urdf_filename = urdf_filename
 
+        # Decide between GUI and Headless modes of operation
         if render_mode == 'human':
             self.physics_client = p.connect(p.GUI)
         else:
@@ -96,19 +100,28 @@ class QuadrupedEnv(gym.Env):
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 2
         self.action_skip = 240
-
-        # --- REWARD WEIGHTS (TUNE THESE) ---
-        self.GOAL_APPROACH_WEIGHT = 5.0
-        self.GOAL_REACHED_BONUS = 200.0  # Large bonus on touching the goal box
-        self.UPRIGHT_REWARD_WEIGHT = 0.5
-        self.ACTION_PENALTY_WEIGHT = 0.001
-        self.SHAKE_PENALTY_WEIGHT = 0.001
-        self.SURVIVAL_BONUS = 0
-        self.FALLEN_PENALTY = 2.0
-        self.FORWARD_VEL_WEIGHT = 3.0  
-        # New: discourage jumping/high vertical motion.
-        self.JUMP_PENALTY_WEIGHT = 0.2     # Penalize excessive vertical velocity
-        self.HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
+        
+        def load_param(name, default):
+            return getattr(config, name, default)
+         
+        def load_all_params():
+            params = {
+                "FORWARD_VEL_WEIGHT": load_param("FORWARD_VEL_WEIGHT", 1.0),
+                "UPRIGHT_REWARD_WEIGHT": load_param("UPRIGHT_REWARD_WEIGHT", 0.5),
+                "ACTION_PENALTY_WEIGHT": load_param("ACTION_PENALTY_WEIGHT", 0.01),
+                "SHAKE_PENALTY_WEIGHT": load_param("SHAKE_PENALTY_WEIGHT", 0.01),
+                "JUMP_PENALTY_WEIGHT": load_param("JUMP_PENALTY_WEIGHT", 5.0),
+                "HIGH_ALTITUDE_PENALTY_WEIGHT": load_param("HIGH_ALTITUDE_PENALTY_WEIGHT", 2.0),
+                "FALLEN_PENALTY": load_param("FALLEN_PENALTY", 20.0),
+                "GOAL_APPROACH_WEIGHT": load_param("GOAL_APPROACH_WEIGHT", 2.0),
+                "GOAL_REACHED_BONUS": load_param("GOAL_REACHED_BONUS", 100.0)
+            }
+            for param, value in params.items():
+                setattr(self, param, value)
+            return params
+        
+        # load parameters from config.py
+        load_all_params()
 
         p.setAdditionalSearchPath(pybullet_data.getDataPath())
         p.setGravity(0, 0, -9.81)
@@ -137,19 +150,20 @@ class QuadrupedEnv(gym.Env):
 
         self.last_distance_to_target = 0.0
         
-        self.joint_indices = []
-        for i in range(p.getNumJoints(self.robot_id)):
-            joint_info = p.getJointInfo(self.robot_id, i)
-            if joint_info[2] == p.JOINT_REVOLUTE:
-                self.joint_indices.append(i)
-
-        num_joints = len(self.joint_indices)
-        self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
-
-        obs_space_shape = (num_joints * 2) + 13 + 2
-        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
-        
+        self.initialize_joints()
+            
         self.render_mode = render_mode
+
+    def initialize_joints(self):
+            self.joint_indices = []
+            num_joints = p.getNumJoints(self.robot_id)
+            for i in range(num_joints):
+                joint_info = p.getJointInfo(self.robot_id, i)
+                if joint_info[2] == p.JOINT_REVOLUTE:
+                    self.joint_indices.append(i)
+            self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
+            obs_space_shape = (num_joints * 2) + 13 + 2
+            self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
@@ -304,7 +318,7 @@ if __name__ == "__main__":
     box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
 
     # Pass box parameters into the environment.
-    env = QuadrupedEnv(
+    env = BaseEnv(
         render_mode='human', 
         urdf_filename=urdf_file, 
         target_box_center=box_center,
