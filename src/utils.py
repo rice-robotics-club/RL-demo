@@ -23,7 +23,8 @@ def load_all_params():
 
 def select_robot():
     ''' Returns URDF file path, save path, and save prefix for a given robot name. '''
-    print("Select Robot Name for Training (options: simple_quadruped, servobot, servobot_box): ")
+    robot_options = list(ROBOTS.keys())
+    print("Select Robot Name for Training (options:", ", ".join(robot_options), "): ")
     robot_name = input().strip()
 
     if robot_name in ROBOTS:
@@ -68,17 +69,17 @@ def select_robot():
                             model_name = sub_files[sub_selected_idx]
                             model_path = os.path.join(ROBOTS[robot_name]['save_path'], selected_model, model_name)
                         else:
-                            print("Invalid selection. Exiting.")
+                            print("Invalid selection lmao. Exiting.")
                             exit(1)
                     else:
                         model_name = model_directory_list[selected_idx]
                         model_path = os.path.join(ROBOTS[robot_name]['save_path'], model_name)
                 else:
-                    print("Invalid selection. Exiting.")
+                    print("Invalid selection lmao. Exiting.")
                     exit(1)
             else:
-                print("Using the latest model by default.")
-                model = best_model_name
+                # Just use the latest (assuming it's last in the directory) model
+                print("Using the latest model: [", best_model_name, "] by default!")
                 model_path = best_model_path
         print("Best Model Path: ", model_path)
         print("URDF File: ", ROBOTS[robot_name]['urdf_file'])
@@ -87,4 +88,4 @@ def select_robot():
         print("==========================")
         return ROBOTS[robot_name]['urdf_file'], ROBOTS[robot_name]['save_path'], ROBOTS[robot_name]['save_prefix'], model_path
     else:
-        raise ValueError(f"Robot '{robot_name}' not found in configuration.")
+        raise ValueError(f"Robot '{robot_name}' not found in configuration. If this isn't a typo, please update config.py to add it!")
