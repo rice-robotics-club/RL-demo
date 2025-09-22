@@ -34,11 +34,15 @@ def select_robot():
         print("==========================")
         print("Robot Selected: ", robot_name)
         print("Model Directory List: ", model_directory_list)
+        
+        # Handle case with no models found
         if len(model_directory_list) == 0:
             print("No saved models found. Please train your model first using train_to_objective.py.")
             exit(1)
         best_model_name = model_directory_list[-1]
         best_model_path = os.path.join(ROBOTS[robot_name]['save_path'], best_model_name)
+        
+        # Handle case with multiple models found
         if len(model_directory_list) > 1:
             print("Multiple saved models found. Would you like to use the latest one? (y/n): ")
             choice = input().strip().lower()
@@ -49,8 +53,26 @@ def select_robot():
                 print("Enter the number of the model you want to use: ")
                 selected_idx = int(input().strip()) - 1
                 if 0 <= selected_idx < len(model_directory_list):
-                    model_name = model_directory_list[selected_idx]
-                    model_path = os.path.join(ROBOTS[robot_name]['save_path'], model_name)
+                    # Check if the selected thing is a directory. If so, prompt for files within it. 
+                    # This isn't recursive but I don't think we actually need a full recursive search function lol
+                    selected_model = model_directory_list[selected_idx]
+                    selected_model_path = os.path.join(ROBOTS[robot_name]['save_path'], selected_model)
+                    if os.path.isdir(selected_model_path):
+                        sub_files = os.listdir(selected_model_path)
+                        print(f"'{selected_model}' is a directory. Available files:")
+                        for sub_idx, sub_file in enumerate(sub_files):
+                            print(f"{sub_idx + 1}: {sub_file}")
+                        print("Enter the number of the file you want to use: ")
+                        sub_selected_idx = int(input().strip()) - 1
+                        if 0 <= sub_selected_idx < len(sub_files):
+                            model_name = sub_files[sub_selected_idx]
+                            model_path = os.path.join(ROBOTS[robot_name]['save_path'], selected_model, model_name)
+                        else:
+                            print("Invalid selection. Exiting.")
+                            exit(1)
+                    else:
+                        model_name = model_directory_list[selected_idx]
+                        model_path = os.path.join(ROBOTS[robot_name]['save_path'], model_name)
                 else:
                     print("Invalid selection. Exiting.")
                     exit(1)

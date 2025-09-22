@@ -1,4 +1,4 @@
-import os
+# Parameters for training are stored here! 
 
 # --- REWARD WEIGHTS (TUNE THESE) ---
 GOAL_APPROACH_WEIGHT = 5.0
@@ -8,11 +8,12 @@ ACTION_PENALTY_WEIGHT = 0.001
 SHAKE_PENALTY_WEIGHT = 0.001
 SURVIVAL_BONUS = 0
 FALLEN_PENALTY = 2.0
-FORWARD_VEL_WEIGHT = 3.0
+FORWARD_VEL_WEIGHT = 4.0
 # New: discourage jumping/high vertical motion.
-JUMP_PENALTY_WEIGHT = 0.2     # Penalize excessive vertical velocity
+JUMP_PENALTY_WEIGHT = 0.1     # Penalize excessive vertical velocity
 HIGH_ALTITUDE_PENALTY_WEIGHT = 0.1  # Penalize staying too high above ground
 
+# Local filepaths for differerent robot configurations
 
 ROBOTS = {
     'simple_quadruped': {
@@ -22,7 +23,7 @@ ROBOTS = {
         
     },
     'servobot': {
-        'urdf_file': "robots/full_servobot/catbot.urdf",
+        'urdf_file': "robots/servobot/servobot.urdf",
         'save_path': 'models/servobot_checkpoints/',
         'save_prefix': 'servobot_model'
     },

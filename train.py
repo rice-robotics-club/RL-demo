@@ -20,6 +20,10 @@ import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
+
+# These are our custom modules: 
+# utils has a bunch of helper functions for importing stuff and navigating local files
+# env has our custom BaseEnv envrironment class that inherits from gym.Env and implements the RL environment
 from src import utils, env
 
 if __name__ == "__main__":
@@ -41,7 +45,7 @@ if __name__ == "__main__":
     model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=100000,
+        save_freq=20000,
         save_path=save_path,
         name_prefix=save_prefix
     )

@@ -236,13 +236,13 @@ class BaseEnv(gym.Env):
                     high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
                     step_reward -= (jump_penalty + high_alt_pen)
                     step_reward = (
-                        approach_reward + forward_reward -
+                        approach_reward + forward_reward + upright_reward -
                         action_penalty - shake_penalty
                     )
                 else:
                     step_reward = -self.FALLEN_PENALTY 
                     total_reward += step_reward
-                    terminated = False        # Added: do not terminate here
+                    terminated = True        # Added: do not terminate here
 
                 total_reward += step_reward
 
@@ -281,7 +281,7 @@ class BaseEnv(gym.Env):
                 total_reward += self.GOAL_REACHED_BONUS
                 truncated = True
                 print("🎉🎉🎉 Goal Touched! 🎉🎉🎉")
-
+                
             info = {}
             
 
@@ -295,7 +295,8 @@ class BaseEnv(gym.Env):
         p.disconnect()
 
 if __name__ == "__main__":
-    urdf_file = "simple_quadruped.urdf"
+    import utils
+    urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
     # Set target box center [x, y] and size [width, depth, height].
     box_center = [12.0, 3.0]
@@ -313,8 +314,8 @@ if __name__ == "__main__":
 
     checkpoint_callback = CheckpointCallback(
         save_freq=10000,
-        save_path='./servobot_checkpoints_box/',
-        name_prefix='servobot_model_box'
+        save_path=save_path,
+        name_prefix=save_prefix
     )
     
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
