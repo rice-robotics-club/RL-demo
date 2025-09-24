@@ -98,8 +98,8 @@ class BaseEnv(gym.Env):
         self.time_step = 1.0 / 240.0
         self.episode_duration = 3.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 2
-        self.action_skip = 240
+        self.action_force_limit = 20
+        self.action_skip = 24
         
         params = utils.load_all_params()
         for param, value in params.items():

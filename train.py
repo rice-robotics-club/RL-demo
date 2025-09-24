@@ -35,9 +35,11 @@ if __name__ == "__main__":
     box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
 
     # Pass box parameters into the environment.
+    min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
-        render_mode='headless', 
+        render_mode='human', 
         urdf_filename=urdf_file, 
+        start_position=[0, 0, -min_z],
         target_box_center=box_center,
         target_box_size=box_size
     )
@@ -52,6 +54,7 @@ if __name__ == "__main__":
     
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
+
         model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
