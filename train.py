@@ -28,7 +28,7 @@ from src import utils, env
 
 if __name__ == "__main__":
 
-    urdf_file, save_path, save_prefix, model_path = utils.select_robot()
+    urdf_file, save_path, save_prefix = utils.select_robot(load_model=False)
 
     # Set target box center [x, y] and size [width, depth, height].
     box_center = [12.0, 3.0]
