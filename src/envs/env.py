@@ -82,12 +82,20 @@ class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
     # Change: init now accepts a target box (center and size).
-    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", start_position=[0, 0, 1],
-                 target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
+    def __init__(self, 
+                 render_mode=None, 
+                 urdf_filename="simple_quadruped.urdf", 
+                 start_position=[0, 0, 1],
+                 target_box_center=[10.0, 0.0], 
+                 target_box_size=[1.0, 1.0, 1.0]):
         super(BaseEnv, self).__init__()
+        '''
+        This class implements the custom Gym environment for our robot RL training!
+        '''
+
         self.urdf_filename = urdf_filename
 
-        # Decide between GUI and Headless modes of operation
+        # Decide between PyBullet's GUI and Headless modes of operation
         if render_mode == 'human':
             self.physics_client = p.connect(p.GUI)
         else:
@@ -98,8 +106,11 @@ class BaseEnv(gym.Env):
         self.episode_duration = 3.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 20
-        self.action_skip = 2
         
+        self.action_skip = 2 
+        # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
+        # 2-5 seems like a reasonable constraint. 
+
         params = utils.load_all_params()
         for param, value in params.items():
                 setattr(self, param, value)
