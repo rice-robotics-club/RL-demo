@@ -5,7 +5,7 @@ import pybullet as p
 import pybullet_data
 import time
 import math
-from src.env import get_min_z
+from envs.env import get_min_z
 # --- Start of the main script ---
 
 

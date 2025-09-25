@@ -24,7 +24,8 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 # These are our custom modules: 
 # utils has a bunch of helper functions for importing stuff and navigating local files
 # env has our custom BaseEnv envrironment class that inherits from gym.Env and implements the RL environment
-from src import utils, env
+from src.envs import env
+from src.utils import utils
 
 if __name__ == "__main__":
 
