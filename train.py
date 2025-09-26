@@ -29,6 +29,13 @@ from src.utils import utils
 
 if __name__ == "__main__":
 
+    ## NO MORE HARD-CODED RENDER MODES! JUST SET IT AT RUNTIME!! YIPPEEEEE!!!!! ## 
+    user_render_mode_request = input("Run with GUI? (y/n): ").strip().lower()
+    if user_render_mode_request == 'y':
+        render_mode = 'human'
+    else:
+        render_mode = 'headless'
+    
     urdf_file, save_path, save_prefix = utils.select_robot(load_model=False)
 
     # Set target box center [x, y] and size [width, depth, height].
@@ -38,7 +45,7 @@ if __name__ == "__main__":
     # Pass box parameters into the environment.
     min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
-        render_mode='human', 
+        render_mode=render_mode, 
         urdf_filename=urdf_file, 
         start_position=[0, 0, -min_z],
         target_box_center=box_center,

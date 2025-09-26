@@ -156,22 +156,44 @@ class BaseEnv(gym.Env):
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
             self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
-            obs_space_shape = (num_joints * 2) + 13 + 2
+
+            # Define the size of our observation space based on several components:
+            # 1. Joint positions and velocities (2 values per joint)
+            # 2. Base position (3), 
+            # 3. Orientation (4), 
+            # 4. Linear velocity (3), 
+            # 5. Angular velocity (3),
+            # 6. Cosine and Sine of joint angles (2 values per joint)
+            # 7. Vector to target box center (2 values: x and y)
+            obs_space_shape = (num_joints * 4) + 13 + 2
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
+        '''
+        Returns the agent's observation of the environment. 
+        (This is basically the list of state variables the agent sees.)
+        '''
+        # Angles and velocities of all the joints
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = [state[0] for state in joint_states]
         joint_velocities = [state[1] for state in joint_states]
-        
+
+        ## TESTING: ##
+        # let's try adding in the cosine and sine values of these joint angles 
+        # (This can help with angle wrapping issues)
+        joint_cos = [math.cos(pos) for pos in joint_positions]
+        joint_sin = [math.sin(pos) for pos in joint_positions]
+
+        # Robot base (central body) 
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         
         # Change: observe the vector to the center of the target box.
         vec_to_target = self.target_box_center - np.array(base_pos[:2])
 
+        # Compose the full observation vector and return it
         obs = np.concatenate([
-            joint_positions, joint_velocities, base_pos, base_orient,
+            joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
             base_vel, base_angular_vel, vec_to_target
         ])
         return obs.astype(np.float32)
@@ -196,7 +218,7 @@ class BaseEnv(gym.Env):
         self.last_distance_to_target = np.linalg.norm(self.target_box_center - np.array(base_pos[:2]))
         
         observation = self._get_obs()
-        info = {}
+        info = self._get_info()
         return observation, info
 
     def calculate_step_reward(self, action):
@@ -313,13 +335,34 @@ class BaseEnv(gym.Env):
                 total_reward += self.GOAL_REACHED_BONUS
                 truncated = True
                 print("🎉🎉🎉 Goal Touched! 🎉🎉🎉")
-                
-            info = {}
-            
+
+            info = self._get_info()
 
             return self._get_obs(), total_reward, terminated, truncated, info
 
+    def _get_info(self):
+        '''
+        Returns additional diagnostic information about the environment.
+        '''
+        info = {}
+        base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
+        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        to_target = self.target_box_center - np.array(base_pos[:2])
+        dist_to_target = np.linalg.norm(to_target)
 
+        rot_matrix = p.getMatrixFromQuaternion(base_orient)
+        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+        uprightness = local_up_vector[2]
+
+        info['base_position'] = base_pos
+        info['base_orientation'] = base_orient
+        info['base_velocity'] = base_vel
+        info['base_angular_velocity'] = base_angular_vel
+        info['distance_to_target'] = dist_to_target
+        info['uprightness'] = uprightness
+
+        return info
+    
     def render(self):
         pass
 
