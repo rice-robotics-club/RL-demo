@@ -7,7 +7,12 @@ def load_param(name, default):
             return getattr(config, name, default)
          
 def load_all_params():
-    params = {
+    default_params = {
+        "robot_name": load_param("robot_name", "simple_quadruped"),
+        "urdf_file": load_param("urdf_file", "robots/simple_quadruped.urdf"),
+        "save_path": load_param("save_path", "models/checkpoints/"),
+        "save_prefix": load_param("save_prefix", "model"),
+        "start_position": load_param("start_position", [0, 0, 0.2]),
         "FORWARD_VEL_WEIGHT": load_param("FORWARD_VEL_WEIGHT", 1.0),
         "UPRIGHT_REWARD_WEIGHT": load_param("UPRIGHT_REWARD_WEIGHT", 0.5),
         "ACTION_PENALTY_WEIGHT": load_param("ACTION_PENALTY_WEIGHT", 0.01),
@@ -18,11 +23,14 @@ def load_all_params():
         "GOAL_APPROACH_WEIGHT": load_param("GOAL_APPROACH_WEIGHT", 2.0),
         "GOAL_REACHED_BONUS": load_param("GOAL_REACHED_BONUS", 100.0)
     }
-    
-    return params
+    for key, value in ROBOTS.get(default_params["robot_name"], {}).items():
+        if key not in default_params:
+            default_params[key] = value
+
+    return default_params
 
 def select_robot(load_model=True):
-    ''' Returns URDF file path, save path, and save prefix for a given robot name. '''
+    ''' Returns URDF file path, save path, save prefix for a given robot name. '''
     robot_options = list(ROBOTS.keys())
     print("Select Robot Name for Training (options:", ", ".join(robot_options), "): ")
     robot_name = input().strip()

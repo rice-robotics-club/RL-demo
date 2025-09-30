@@ -394,7 +394,7 @@ if __name__ == "__main__":
     
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
-        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
+        model.learn(total_timesteps=1000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
     finally:
