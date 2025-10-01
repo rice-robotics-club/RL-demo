@@ -31,5 +31,3 @@ environment:
     ```shell
     conda env update
     ```
-
-NOTE: i set this up with some guesswork so if this environment doesn't match the environment that the people who actually got this running used, can yall please update the requirements.txt file rq with ```conda list -e > requirements.txt```? thx, - clay
