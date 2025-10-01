@@ -221,6 +221,10 @@ class BaseEnv(gym.Env):
         info = self._get_info()
         return observation, info
 
+
+    def calculate_step_reward_alternate(self, action):
+        pass
+
     def calculate_step_reward(self, action):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
