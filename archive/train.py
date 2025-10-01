@@ -11,8 +11,8 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
 # Our custom environment class
-from src.quadruped_env import QuadrupedEnv
-from src.env import get_min_z
+from envs.quadruped_env import QuadrupedEnv
+from envs.env import get_min_z
 
 if __name__ == "__main__":
     # To use a different robot, change the filename here

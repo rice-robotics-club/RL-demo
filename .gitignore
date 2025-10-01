@@ -2,3 +2,5 @@
 .vscode
 __pycache__
 .conda
+models/servobot_checkpoints_box/*
+models/servobot_checkpoints/*

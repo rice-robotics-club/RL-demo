@@ -1,8 +1,10 @@
-from src.env import BaseEnv
+
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 import os
-from src import utils
+
+from src.envs.env import BaseEnv
+from src.utils import utils
 
 '''
 This script is a mismash of the quadreped run_trained.py and the servobot train.py scripts to load and run a trained servobot model

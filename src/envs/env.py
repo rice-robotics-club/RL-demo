@@ -22,18 +22,17 @@ from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 
-from . import config, utils
+from ..utils import utils
+
+from ..utils import config
 
 
 '''
-Goal Structure:
- _____________________      _______________      _____________________      _______________ 
-| run_trained_quad.py |    | train_quad.py |    | run_trained_servo.py |    | train_servo.py | 
- ----------------------      -------------      ----------------------      -------------
-        \   ______________  /                      \     ______________     /
-           quadruped_env.py                            | servobot_env.py |
-           ----------------                             ----------------
-                     \ _________________          ____________/
+Ideal Structure:
+            ______________           _____________      __________________ 
+                train.py  |         | visualize.py |    |    test.py     |
+           ----------------          --------|------    ----------------
+                     \ _________________     |     ____________/
                                         \ ______ /
                                         | env.py |
                                          --------
@@ -83,12 +82,20 @@ class BaseEnv(gym.Env):
     metadata = {'render_modes': ['human'], 'render_fps': 240}
 
     # Change: init now accepts a target box (center and size).
-    def __init__(self, render_mode=None, urdf_filename="simple_quadruped.urdf", start_position=[0, 0, 1],
-                 target_box_center=[10.0, 0.0], target_box_size=[1.0, 1.0, 1.0]):
+    def __init__(self, 
+                 render_mode=None, 
+                 urdf_filename="simple_quadruped.urdf", 
+                 start_position=[0, 0, 1],
+                 target_box_center=[10.0, 0.0], 
+                 target_box_size=[1.0, 1.0, 1.0]):
         super(BaseEnv, self).__init__()
+        '''
+        This class implements the custom Gym environment for our robot RL training!
+        '''
+
         self.urdf_filename = urdf_filename
 
-        # Decide between GUI and Headless modes of operation
+        # Decide between PyBullet's GUI and Headless modes of operation
         if render_mode == 'human':
             self.physics_client = p.connect(p.GUI)
         else:
@@ -98,9 +105,12 @@ class BaseEnv(gym.Env):
         self.time_step = 1.0 / 240.0
         self.episode_duration = 3.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 2
-        self.action_skip = 240
+        self.action_force_limit = 20
         
+        self.action_skip = 2 
+        # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
+        # 2-5 seems like a reasonable constraint. 
+
         params = utils.load_all_params()
         for param, value in params.items():
                 setattr(self, param, value)
@@ -146,22 +156,44 @@ class BaseEnv(gym.Env):
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
             self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
-            obs_space_shape = (num_joints * 2) + 13 + 2
+
+            # Define the size of our observation space based on several components:
+            # 1. Joint positions and velocities (2 values per joint)
+            # 2. Base position (3), 
+            # 3. Orientation (4), 
+            # 4. Linear velocity (3), 
+            # 5. Angular velocity (3),
+            # 6. Cosine and Sine of joint angles (2 values per joint)
+            # 7. Vector to target box center (2 values: x and y)
+            obs_space_shape = (num_joints * 4) + 13 + 2
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
+        '''
+        Returns the agent's observation of the environment. 
+        (This is basically the list of state variables the agent sees.)
+        '''
+        # Angles and velocities of all the joints
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = [state[0] for state in joint_states]
         joint_velocities = [state[1] for state in joint_states]
-        
+
+        ## TESTING: ##
+        # let's try adding in the cosine and sine values of these joint angles 
+        # (This can help with angle wrapping issues)
+        joint_cos = [math.cos(pos) for pos in joint_positions]
+        joint_sin = [math.sin(pos) for pos in joint_positions]
+
+        # Robot base (central body) 
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         
         # Change: observe the vector to the center of the target box.
         vec_to_target = self.target_box_center - np.array(base_pos[:2])
 
+        # Compose the full observation vector and return it
         obs = np.concatenate([
-            joint_positions, joint_velocities, base_pos, base_orient,
+            joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
             base_vel, base_angular_vel, vec_to_target
         ])
         return obs.astype(np.float32)
@@ -186,16 +218,78 @@ class BaseEnv(gym.Env):
         self.last_distance_to_target = np.linalg.norm(self.target_box_center - np.array(base_pos[:2]))
         
         observation = self._get_obs()
-        info = {}
+        info = self._get_info()
         return observation, info
 
+    def calculate_step_reward(self, action):
+        ''' 
+        This function is run for each physics step to calculate the reward earned by the robot during that step.
+        '''
+
+        # Get current position and orientation
+        current_base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
+        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+
+
+        # --- Reward function terms ---
+        
+        # Approach reward: reward for reducing distance to our box target (centered at target_box_center)
+        current_distance_to_target = np.linalg.norm(self.target_box_center - np.array(current_base_pos[:2]))
+        # Calculate the change in distance to the target
+        distance_gained = self.last_distance_to_target - current_distance_to_target
+        # Calculate the approach reward
+        approach_reward = self.GOAL_APPROACH_WEIGHT * distance_gained
+        to_target = self.target_box_center - np.array(current_base_pos[:2])
+        dist = np.linalg.norm(to_target) + 1e-6
+        dir_unit = to_target / dist
+
+        # Instantaneous speed in the direction of the target (clamped to >= 0).
+        forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
+        forward_speed = max(forward_speed, 0.0)
+
+        # Calculate the reward for 'forwards movement' towards the target
+        forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
+        self.last_distance_to_target = current_distance_to_target
+
+        # Upright reward: reward for keeping the robot upright (based on local up vector's Z component)
+        rot_matrix = p.getMatrixFromQuaternion(p.getBasePositionAndOrientation(self.robot_id)[1])
+        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+        uprightness = local_up_vector[2]
+
+        ### Penalties ###
+        # Action penalty: small penalty for large actions (to encourage smoother motions)
+        action_penalty = self.ACTION_PENALTY_WEIGHT * np.sum(np.square(action))
+        # Shake penalty: small penalty for large angular velocities (to encourage stability)
+        shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
+        
+        # We have a huge penalty for falling over. This is a simple check to see if it's done that.
+        # We check if the robot's base is too low or if it's tilted too far over.
+        is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
+        
+        step_reward = 0
+        if not is_fallen:
+            upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
+            jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
+            high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
+            step_reward -= (jump_penalty + high_alt_pen)
+            step_reward = (
+                approach_reward + forward_reward + upright_reward -
+                action_penalty - shake_penalty
+            )
+        else:
+            step_reward = -self.FALLEN_PENALTY 
+            
+        return step_reward
+    
     def step(self, action):
             """
             Take a step in the simulation with a revised reward function and a strict no-jump rule.
             """
             total_reward = 0.0
             
+            # Repeat the action for some number of steps equal to our action_skip value (to simulate lower control frequency)
             for _ in range(self.action_skip):
+                # Iterate over each joint and attempt to move it to the calculated target position given by the policy
                 for i, joint_index in enumerate(self.joint_indices):
                     p.setJointMotorControl2(
                         self.robot_id, joint_index, p.POSITION_CONTROL,
@@ -204,47 +298,7 @@ class BaseEnv(gym.Env):
                 p.stepSimulation()
                 self.steps_taken += 1
 
-                current_base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
-                base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
-
-                # --- Reward function terms ---
-                current_distance_to_target = np.linalg.norm(self.target_box_center - np.array(current_base_pos[:2]))
-                distance_gained = self.last_distance_to_target - current_distance_to_target
-                approach_reward = self.GOAL_APPROACH_WEIGHT * distance_gained
-                to_target = self.target_box_center - np.array(current_base_pos[:2])
-                dist = np.linalg.norm(to_target) + 1e-6
-                dir_unit = to_target / dist
-                # Instantaneous speed in the direction of the target (clamped to >= 0).
-                forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
-                forward_speed = max(forward_speed, 0.0)
-
-                forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
-                self.last_distance_to_target = current_distance_to_target
-
-                rot_matrix = p.getMatrixFromQuaternion(p.getBasePositionAndOrientation(self.robot_id)[1])
-                local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
-                uprightness = local_up_vector[2]
-                action_penalty = self.ACTION_PENALTY_WEIGHT * np.sum(np.square(action))
-                shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
-                
-                is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.75
-                
-                step_reward = 0
-                if not is_fallen:
-                    upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-                    jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
-                    high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
-                    step_reward -= (jump_penalty + high_alt_pen)
-                    step_reward = (
-                        approach_reward + forward_reward + upright_reward -
-                        action_penalty - shake_penalty
-                    )
-                else:
-                    step_reward = -self.FALLEN_PENALTY 
-                    total_reward += step_reward
-                    terminated = True        # Added: do not terminate here
-
-                total_reward += step_reward
+                total_reward += self.calculate_step_reward(action)
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
@@ -281,13 +335,34 @@ class BaseEnv(gym.Env):
                 total_reward += self.GOAL_REACHED_BONUS
                 truncated = True
                 print("🎉🎉🎉 Goal Touched! 🎉🎉🎉")
-                
-            info = {}
-            
+
+            info = self._get_info()
 
             return self._get_obs(), total_reward, terminated, truncated, info
 
+    def _get_info(self):
+        '''
+        Returns additional diagnostic information about the environment.
+        '''
+        info = {}
+        base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
+        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        to_target = self.target_box_center - np.array(base_pos[:2])
+        dist_to_target = np.linalg.norm(to_target)
 
+        rot_matrix = p.getMatrixFromQuaternion(base_orient)
+        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+        uprightness = local_up_vector[2]
+
+        info['base_position'] = base_pos
+        info['base_orientation'] = base_orient
+        info['base_velocity'] = base_vel
+        info['base_angular_velocity'] = base_angular_vel
+        info['distance_to_target'] = dist_to_target
+        info['uprightness'] = uprightness
+
+        return info
+    
     def render(self):
         pass
 
@@ -295,7 +370,6 @@ class BaseEnv(gym.Env):
         p.disconnect()
 
 if __name__ == "__main__":
-    import utils
     urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
     # Set target box center [x, y] and size [width, depth, height].
@@ -320,7 +394,7 @@ if __name__ == "__main__":
     
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
-        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
+        model.learn(total_timesteps=1000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
     finally:
