@@ -51,8 +51,39 @@ if __name__ == "__main__":
         target_box_center=box_center,
         target_box_size=box_size
     )
+    use_existing_model = input("Use existing model if available? (y/n): ").strip().lower() == 'y'
+    if use_existing_model:
+        model_directory_list = os.listdir(save_path)
+        print("Model Directory List: ", model_directory_list)
     
-    model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
+        # Handle case with no models found
+        if len(model_directory_list) == 0:
+            print("No saved models found. A new model will be created.")
+            use_existing_model = False
+        else:
+            best_model_name = model_directory_list[-1]
+            best_model_path = os.path.join(save_path, best_model_name)
+            
+            # Handle case with multiple models found
+            if len(model_directory_list) > 1:
+                print("Multiple saved models found. Would you like to use the latest one? (y/n): ")
+                choice = input().strip().lower()
+                if choice != 'y':
+                    print("Available models:")
+                    for idx, model_name in enumerate(model_directory_list):
+                        print(f"{idx + 1}: {model_name}")
+                    print("Enter the number of the model you want to use: ")
+                    selected_idx = int(input().strip()) - 1
+                    if 0 <= selected_idx < len(model_directory_list):
+                        best_model_name = model_directory_list[selected_idx]
+                        best_model_path = os.path.join(save_path, best_model_name)
+                    else:
+                        print("Invalid selection. Using the latest model.")
+
+            print(f"Loading existing model from {best_model_path}")
+            model = PPO.load(best_model_path, env=env, device='cpu')
+    else:
+        model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
 
     checkpoint_callback = CheckpointCallback(
         save_freq=20000,
@@ -63,7 +94,7 @@ if __name__ == "__main__":
     print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
 
-        model.learn(total_timesteps=1000000, callback=checkpoint_callback)  # This task may require longer training
+        model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
     finally:
