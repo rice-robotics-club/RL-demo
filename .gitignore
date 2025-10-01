@@ -1,6 +1,6 @@
 .venv
 .vscode
 __pycache__
-.conda
 models
+.conda
 .idea
