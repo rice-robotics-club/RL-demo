@@ -97,13 +97,13 @@ class BaseEnv(gym.Env):
         # Decide between PyBullet's GUI and Headless modes of operation
         if render_mode == 'human':
             self.physics_client = p.connect(p.GUI)
+            self.debug_line_id = None  # To store the line ID for rendering
         else:
             self.physics_client = p.connect(p.DIRECT)
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 10.0  # Slightly longer to allow exploration
-        self.episode_duration = 10.0  # Slightly longer to allow exploration
+        self.episode_duration = 5.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 50
         
@@ -223,12 +223,16 @@ class BaseEnv(gym.Env):
         # New target velocity for this episode
         self.target_velocity = self.generate_random_target_velocity(self.target_speed)
         
+
         # Render in pybullet GUI if enabled as a vector
         if self.render_mode == 'human':
+            
             # Draw the target velocity vector
+            if self.debug_line_id is not None:
+                p.removeUserDebugItem(self.debug_line_id)
             target_start = [0, 0, 0.1]
             target_end = [self.target_velocity[0] * 10, self.target_velocity[1] * 10, 0.1]
-            p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=300, lifeTime=5)
+            self.debug_line_id = p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=5, lifeTime=5)
 
         observation = self._get_obs()
         info = self._get_info()
@@ -258,19 +262,31 @@ class BaseEnv(gym.Env):
         ## Reward Components: ##
         # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity
         goal_component = np.dot(base_vel, target_vel) / (np.linalg.norm(target_vel) + 1e-6)
-        goal_velocity_reward = self.FORWARD_VEL_WEIGHT * max(goal_component, 0.0)
+        # This should be positive if moving in the right direction, negative if moving away
+        goal_velocity_reward = self.FORWARD_VEL_WEIGHT * goal_component
 
         # - Uprightness
         rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
         local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
         uprightness = local_up_vector[2]
         upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
+        
+        is_fallen = current_base_pos[2] < 0.1 or uprightness < 0.5
+        # Survival reward that ramps up over time to encourage longer episodes
+        survival_reward = self.SURVIVAL_WEIGHT * steps_taken if not is_fallen else 0.0
+        
+        # Matching orientation with the target velocity direction (encourage facing the direction of movement)
+        # This can be done by projecting the robot's forward vector onto the target velocity direction
+        forward_vector = np.array([rot_matrix[0], rot_matrix[3], rot_matrix[6]])
+        target_direction = target_vel / (np.linalg.norm(target_vel) + 1e-6)
+        orientation_alignment = np.dot(forward_vector, target_direction)
+        orientation_reward = self.ORIENTATION_REWARD_WEIGHT * max(0.0, orientation_alignment)
 
         ## - Penalties: ##
         # - Shaking
         shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
         # - Falling Penalty
-        is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
+
         fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
         # - Distance from home position 
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
@@ -286,16 +302,23 @@ class BaseEnv(gym.Env):
 
         # Sum all components, return total reward
         total_reward = (
-            goal_velocity_reward + upright_reward - home_penalty -
+            goal_velocity_reward + upright_reward + survival_reward + orientation_reward - home_penalty -
             shake_penalty - fallen_penalty - jump_penalty - high_alt_pen - tilt_penalty
         )
+        
+        if steps_taken % 240 == 0 and self.render_mode == 'human':
+            print("================= Step Reward Breakdown ===============")
+            print(f"Target Velocity: {target_vel}, Current Velocity: {base_vel}")
+            print(f"Base Position: {current_base_pos}, Uprightness: {uprightness:.2f}")
+            print(f"Is Fallen: {is_fallen}")
+
+            print(f"Step Reward Breakdown: Forward: {goal_velocity_reward:.2f}, Upright: {upright_reward:.2f}, Survival: {survival_reward:.2f}, Home Penalty: {-home_penalty:.2f}, "
+              f"Shake Penalty: {-shake_penalty:.2f}, Fallen Penalty: {-fallen_penalty:.2f}, Orientation: {orientation_reward:.2f}, Tilt Penalty: {-tilt_penalty:.2f}, "
+              f"Jump Penalty: {-jump_penalty:.2f}, High Alt Penalty: {-high_alt_pen:.2f} => Total: {total_reward:.2f}")
+
         return total_reward
         # DEBUG: Print out all the reward components
-        #print(f"Step Reward Breakdown: Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
-        #      f"Action Penalty: {action_penalty:.2f}, Shake Penalty: {shake_penalty:.2f}, Fallen Penalty: {fallen_penalty:.2f}, "
-        #      f"Jump Penalty: {jump_penalty:.2f}, High Alt Penalty: {high_alt_pen:.2f} => Total: {step_reward:.2f}")
 
-        return step_reward
     
     def step(self, action):
             """
@@ -341,12 +364,12 @@ class BaseEnv(gym.Env):
             rotation_matrix = p.getMatrixFromQuaternion(final_orientation)
             final_up_vector = np.array([rotation_matrix[2], rotation_matrix[5], rotation_matrix[8]])
             if final_pos[2] < 0.1 or final_up_vector[2] < 0.3:
-                terminated = True
+                terminated = False
                 #print("🤖 Robot has fallen! Episode terminated. 🤖")
                 # Display a message in the GUI if in GUI mode
                 if self.render_mode == 'human':
-                    p.addUserDebugText("FALLEN!", [0,0,1], textColorRGB=[1,0,0], textSize=2.5, lifeTime=2)
-
+                    self.fallen_id = p.addUserDebugText("FALLEN!", [0,0,1], textColorRGB=[1,0,0], textSize=2.5, lifeTime=.1)
+                    
             # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
 
             info = self._get_info()
