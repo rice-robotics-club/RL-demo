@@ -225,17 +225,20 @@ class BaseEnv(gym.Env):
         
         # Render in pybullet GUI if enabled as a vector
         if self.render_mode == 'human':
+            # Draw the target velocity vector
             target_start = [0, 0, 0.1]
             target_end = [self.target_velocity[0] * 10, self.target_velocity[1] * 10, 0.1]
-            p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=300, lifeTime=30)
+            p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=300, lifeTime=5)
 
         observation = self._get_obs()
         info = self._get_info()
         return observation, info
+    
+    def calculate_step_reward(self, action, steps_taken=0):
+        ''' 
+        This function is run for each physics step to calculate the reward earned by the robot during that step.
+        '''
 
-
-    def calculate_step_reward_alternate(self, action):
-        
         # NEW WITH THIS VERSION: 
         # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
         # We should get that and use it to calculate a reward for movement in the target direction. 
@@ -266,7 +269,7 @@ class BaseEnv(gym.Env):
         ## - Penalties: ##
         # - Shaking
         shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
-        # - Falling
+        # - Falling Penalty
         is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
         fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
         # - Distance from home position 
@@ -278,58 +281,15 @@ class BaseEnv(gym.Env):
         jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
         # - High Altitude
         high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
+        # - Tilting
+        tilt_penalty = self.TILT_PENALTY_WEIGHT * (1.0 - uprightness)
 
         # Sum all components, return total reward
         total_reward = (
             goal_velocity_reward + upright_reward - home_penalty -
-            shake_penalty - fallen_penalty - jump_penalty - high_alt_pen
+            shake_penalty - fallen_penalty - jump_penalty - high_alt_pen - tilt_penalty
         )
         return total_reward
-    
-    def calculate_step_reward(self, action):
-        ''' 
-        This function is run for each physics step to calculate the reward earned by the robot during that step.
-        '''
-
-        # Get current position and orientation
-        current_base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
-        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
-
-
-        # --- Reward function terms ---
-        
-        # Simple forward speed: use the robot's base x velocity
-        forward_speed = max(base_vel[0], 0.0)
-
-        # Calculate the reward for 'forwards movement' towards the target
-        forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
-
-        # Upright reward: reward for keeping the robot upright (based on local up vector's Z component)
-        rot_matrix = p.getMatrixFromQuaternion(p.getBasePositionAndOrientation(self.robot_id)[1])
-        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
-        uprightness = local_up_vector[2]
-
-        ### Penalties ###
-        # Action penalty: small penalty for large actions (to encourage smoother motions)
-        action_penalty = self.ACTION_PENALTY_WEIGHT * np.sum(np.square(action))
-        # Shake penalty: small penalty for large angular velocities (to encourage stability)
-        shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
-        
-        # We have a huge penalty for falling over. This is a simple check to see if it's done that.
-        # We check if the robot's base is too low or if it's tilted too far over.
-        is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
-        fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
-        
-        step_reward = 0
-        upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-        jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
-        high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
-        step_reward -= (jump_penalty + high_alt_pen)
-        step_reward = (
-            forward_reward + upright_reward -
-            action_penalty - shake_penalty - fallen_penalty
-        )
-        
         # DEBUG: Print out all the reward components
         #print(f"Step Reward Breakdown: Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
         #      f"Action Penalty: {action_penalty:.2f}, Shake Penalty: {shake_penalty:.2f}, Fallen Penalty: {fallen_penalty:.2f}, "
@@ -342,7 +302,7 @@ class BaseEnv(gym.Env):
             Take a step in the simulation with a revised reward function and a strict no-jump rule.
             """
             total_reward = 0.0
-            
+
             # Repeat the action for some number of steps equal to our action_skip value (to simulate lower control frequency)
             for _ in range(self.action_skip):
                 # Iterate over each joint and attempt to move it to the calculated target position given by the policy
@@ -353,13 +313,14 @@ class BaseEnv(gym.Env):
                     )
                 p.stepSimulation()
                 self.steps_taken += 1
-
-                total_reward += self.calculate_step_reward_alternate(action)
+                # NEW: use alternate function, input steps taken for ramping survival reward
+                total_reward += self.calculate_step_reward(action, steps_taken=self.steps_taken)
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
                 if self.render_mode == 'human':
                     time.sleep(self.time_step)
+
             
             # --- Termination conditions ---
 
@@ -374,14 +335,17 @@ class BaseEnv(gym.Env):
             # 2. Check for jumping
             if final_pos[2] > 1.3:
                 print("🚫 Jump Detected! Episode terminated with penalty. 🚫")
-                total_reward -= 50.0
                 terminated = False
 
             # 3. Check for falling (using the correct orientation variable)
             rotation_matrix = p.getMatrixFromQuaternion(final_orientation)
             final_up_vector = np.array([rotation_matrix[2], rotation_matrix[5], rotation_matrix[8]])
-            if final_pos[2] < 0.6 or final_up_vector[2] < 0.7:
-                terminated = False
+            if final_pos[2] < 0.1 or final_up_vector[2] < 0.3:
+                terminated = True
+                #print("🤖 Robot has fallen! Episode terminated. 🤖")
+                # Display a message in the GUI if in GUI mode
+                if self.render_mode == 'human':
+                    p.addUserDebugText("FALLEN!", [0,0,1], textColorRGB=[1,0,0], textSize=2.5, lifeTime=2)
 
             # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
 

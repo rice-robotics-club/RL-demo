@@ -16,7 +16,7 @@ ROBOTS = {
         'UPRIGHT_REWARD_WEIGHT': 0.5,
         'ACTION_PENALTY_WEIGHT': 0.01,
         'SHAKE_PENALTY_WEIGHT': 0.01,
-        'SURVIVAL_BONUS': 0,
+        'SURVIVAL_WEIGHT': 0,
         'FALLEN_PENALTY': 2.0, 
         'FORWARD_VEL_WEIGHT': 100.0,
         # New: discourage jumping/high vertical motion.
@@ -31,36 +31,16 @@ ROBOTS = {
         'save_prefix': 'servobot_model',
         'start_position': [0, 0, 0.2],
          ### WEIGHTS FOR TRAINING ###
-        'UPRIGHT_REWARD_WEIGHT': 0.5,
-        'ACTION_PENALTY_WEIGHT': 0.1,
+        'UPRIGHT_REWARD_WEIGHT': 0.75,
         'SHAKE_PENALTY_WEIGHT': 0.05,
-        'SURVIVAL_BONUS': 0,
-        'FALLEN_PENALTY': 2.0,
-        'FORWARD_VEL_WEIGHT': 4.0,
+        'SURVIVAL_WEIGHT': 0.2,  # Small constant reward for each step the robot stays upright
+        'FALLEN_PENALTY': 200,
+        'FORWARD_VEL_WEIGHT': 3.0,
         # New: discourage jumping/high vertical motion.
         'JUMP_PENALTY_WEIGHT': 0.1,     # Penalize excessive vertical velocity
         'HIGH_ALTITUDE_PENALTY_WEIGHT': 0.1,  # Penalize staying too high above ground
         # New: Home Position Weight
-        'HOME_POSITION_PENALTY_WEIGHT': 0.1  # Penalize distance from home position
+        'HOME_POSITION_PENALTY_WEIGHT': 0.1,  # Penalize distance from home position
+        'TILT_PENALTY_WEIGHT': 0.1  # Penalize excessive tilting (pitch/roll)
     },
-
-    
-    'servobot_box': {
-        'urdf_file': "robots/full_servobot/catbot.urdf",
-        'save_path': 'models/servobot_checkpoints_box/',
-        'save_prefix': 'servobot_box_model',
-        'start_position': [0, 0, 0.2],
-        ### WEIGHTS FOR TRAINING ###
-        'GOAL_APPROACH_WEIGHT': 15.0,
-        'GOAL_REACHED_BONUS': 200.0,  # Large bonus on touching the goal box
-        'UPRIGHT_REWARD_WEIGHT': 0.5,
-        'ACTION_PENALTY_WEIGHT': 0.1,
-        'SHAKE_PENALTY_WEIGHT': 0.1,
-        'SURVIVAL_BONUS': 0,
-        'FALLEN_PENALTY': 2.0,
-        'FORWARD_VEL_WEIGHT': 4.0,
-        # New: discourage jumping/high vertical motion.
-        'JUMP_PENALTY_WEIGHT': 0.1,     # Penalize excessive vertical velocity
-        'HIGH_ALTITUDE_PENALTY_WEIGHT': 0.1  # Penalize staying too high above ground
-    }
 }

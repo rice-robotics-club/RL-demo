@@ -13,12 +13,13 @@ def load_all_params(robot_name):
         'UPRIGHT_REWARD_WEIGHT',
         'ACTION_PENALTY_WEIGHT',
         'SHAKE_PENALTY_WEIGHT',
-        'SURVIVAL_BONUS',
+        'SURVIVAL_WEIGHT',
         'FALLEN_PENALTY',
         'FORWARD_VEL_WEIGHT',
         'JUMP_PENALTY_WEIGHT',
         'HIGH_ALTITUDE_PENALTY_WEIGHT',
-        'HOME_POSITION_PENALTY_WEIGHT'
+        'HOME_POSITION_PENALTY_WEIGHT',
+        'TILT_PENALTY_WEIGHT'
     ]
     params = {}
     for param in possible_params:
