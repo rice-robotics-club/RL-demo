@@ -227,6 +227,27 @@ class BaseEnv(gym.Env):
 
 
     def calculate_step_reward_alternate(self, action):
+        
+        # NEW WITH THIS VERSION: 
+        # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
+        # We should get that and use it to calculate a reward for movement in the target direction. 
+        # There is no 'target box' in this setup - instead it's just trying to follow a velocity vector.
+       
+        # This target velocity should be fairly small (0.5 m/s?) to start with - 
+        # perhaps we can increase the speed as the training progresses?
+
+        # We also want to define a 'home' position for each joint (probably in the __init__ method) 
+        # and punish actions that move too far away from it. This will keep the robot more stable.
+
+
+        # Get position, orientation, velocity
+
+        # Reward Components:
+        # - Velocity in target direction
+        # - Uprightness
+        # - Penalties for large actions, shaking, falling, jumping, high altitude
+
+
         pass
 
     def calculate_step_reward(self, action):
