@@ -1,0 +1,11 @@
+name: rl-demo
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.13
+  - pip
+  - numpy
+  - pybullet
+  - gymnasium
+  - stable-baselines3
