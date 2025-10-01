@@ -111,7 +111,7 @@ class BaseEnv(gym.Env):
         # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
         # 2-5 seems like a reasonable constraint. 
 
-        params = utils.load_all_params()
+        params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
                 setattr(self, param, value)
         # load parameters from config.py
@@ -244,8 +244,8 @@ class BaseEnv(gym.Env):
         dir_unit = to_target / dist
 
         # Instantaneous speed in the direction of the target (clamped to >= 0).
-        forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
-        forward_speed = max(forward_speed, 0.0)
+        # Simple forward speed: use the robot's base x velocity
+        forward_speed = max(base_vel[0], 0.0)
 
         # Calculate the reward for 'forwards movement' towards the target
         forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
@@ -276,7 +276,12 @@ class BaseEnv(gym.Env):
             approach_reward + forward_reward + upright_reward -
             action_penalty - shake_penalty - fallen_penalty
         )
-            
+        
+        # DEBUG: Print out all the reward components
+        #print(f"Step Reward Breakdown: Approach: {approach_reward:.2f}, Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
+        #      f"Action Penalty: {action_penalty:.2f}, Shake Penalty: {shake_penalty:.2f}, Fallen Penalty: {fallen_penalty:.2f}, "
+        #      f"Jump Penalty: {jump_penalty:.2f}, High Alt Penalty: {high_alt_pen:.2f} => Total: {step_reward:.2f}")
+
         return step_reward
     
     def step(self, action):
