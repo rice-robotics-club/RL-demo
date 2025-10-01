@@ -103,11 +103,11 @@ class BaseEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 3.0  # Slightly longer to allow exploration
+        self.episode_duration = 10.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
-        self.action_force_limit = 20
+        self.action_force_limit = 50
         
-        self.action_skip = 2 
+        self.action_skip = 20
         # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
         # 2-5 seems like a reasonable constraint. 
 
@@ -121,12 +121,14 @@ class BaseEnv(gym.Env):
         p.setGravity(0, 0, -9.81)
         p.setPhysicsEngineParameter(fixedTimeStep=self.time_step)
         self.plane_id = p.loadURDF("plane.urdf")
-        
+        p.changeDynamics(bodyUniqueId=self.plane_id, 
+                 linkIndex=-1,      # -1 for the base
+                 lateralFriction=0.8)
 
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.start_position = start_position
         self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False)
-        
+
         base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         self.start_position = base_pos
         # New: create the target box.
@@ -155,6 +157,9 @@ class BaseEnv(gym.Env):
                 joint_info = p.getJointInfo(self.robot_id, i)
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
+                # restrict action force limit based on joint max force if available
+                if len(joint_info) >= 11:
+                    self.action_force_limit = min(self.action_force_limit, joint_info[10])
             self.action_space = spaces.Box(low=-1, high=1, shape=(num_joints,), dtype=np.float32)
 
             # Define the size of our observation space based on several components:
