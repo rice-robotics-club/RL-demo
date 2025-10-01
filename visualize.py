@@ -3,7 +3,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
 import os
 
-from src.envs.env import BaseEnv
+from src.envs.env import BaseEnv, get_min_z
 from src.utils import utils
 
 '''
@@ -17,8 +17,9 @@ if __name__ == "__main__":
 
     urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
+    min_z = get_min_z(urdf_file)
     # Create the environment. Stable-baselines will automatically call reset.
-    env = BaseEnv(render_mode='human', urdf_filename=urdf_file)
+    env = BaseEnv(render_mode='human', urdf_filename=urdf_file, start_position=[0, 0, -min_z])
 
     # check to make sure we didnt forget to import a model lmao
     if not os.path.exists(model_path):

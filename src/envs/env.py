@@ -111,7 +111,7 @@ class BaseEnv(gym.Env):
         # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
         # 2-5 seems like a reasonable constraint. 
 
-        params = utils.load_all_params()
+        params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
                 setattr(self, param, value)
         # load parameters from config.py
@@ -155,7 +155,7 @@ class BaseEnv(gym.Env):
                 joint_info = p.getJointInfo(self.robot_id, i)
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
-            self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
+            self.action_space = spaces.Box(low=-1, high=1, shape=(num_joints,), dtype=np.float32)
 
             # Define the size of our observation space based on several components:
             # 1. Joint positions and velocities (2 values per joint)
@@ -221,6 +221,10 @@ class BaseEnv(gym.Env):
         info = self._get_info()
         return observation, info
 
+
+    def calculate_step_reward_alternate(self, action):
+        pass
+
     def calculate_step_reward(self, action):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
@@ -244,8 +248,8 @@ class BaseEnv(gym.Env):
         dir_unit = to_target / dist
 
         # Instantaneous speed in the direction of the target (clamped to >= 0).
-        forward_speed = float(np.dot(np.array(base_vel[:2]), dir_unit))
-        forward_speed = max(forward_speed, 0.0)
+        # Simple forward speed: use the robot's base x velocity
+        forward_speed = max(base_vel[0], 0.0)
 
         # Calculate the reward for 'forwards movement' towards the target
         forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
@@ -265,20 +269,23 @@ class BaseEnv(gym.Env):
         # We have a huge penalty for falling over. This is a simple check to see if it's done that.
         # We check if the robot's base is too low or if it's tilted too far over.
         is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
+        fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
         
         step_reward = 0
-        if not is_fallen:
-            upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-            jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
-            high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
-            step_reward -= (jump_penalty + high_alt_pen)
-            step_reward = (
-                approach_reward + forward_reward + upright_reward -
-                action_penalty - shake_penalty
-            )
-        else:
-            step_reward = -self.FALLEN_PENALTY 
-            
+        upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
+        jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
+        high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
+        step_reward -= (jump_penalty + high_alt_pen)
+        step_reward = (
+            approach_reward + forward_reward + upright_reward -
+            action_penalty - shake_penalty - fallen_penalty
+        )
+        
+        # DEBUG: Print out all the reward components
+        #print(f"Step Reward Breakdown: Approach: {approach_reward:.2f}, Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
+        #      f"Action Penalty: {action_penalty:.2f}, Shake Penalty: {shake_penalty:.2f}, Fallen Penalty: {fallen_penalty:.2f}, "
+        #      f"Jump Penalty: {jump_penalty:.2f}, High Alt Penalty: {high_alt_pen:.2f} => Total: {step_reward:.2f}")
+
         return step_reward
     
     def step(self, action):
@@ -293,7 +300,7 @@ class BaseEnv(gym.Env):
                 for i, joint_index in enumerate(self.joint_indices):
                     p.setJointMotorControl2(
                         self.robot_id, joint_index, p.POSITION_CONTROL,
-                        targetPosition=action[i], force=self.action_force_limit
+                        targetPosition= 1.57 * action[i], force=self.action_force_limit
                     )
                 p.stepSimulation()
                 self.steps_taken += 1

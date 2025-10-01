@@ -3,31 +3,27 @@ import os
 from .config import ROBOTS
 from . import config
 
-def load_param(name, default):
-            return getattr(config, name, default)
-         
-def load_all_params():
-    default_params = {
-        "robot_name": load_param("robot_name", "simple_quadruped"),
-        "urdf_file": load_param("urdf_file", "robots/simple_quadruped.urdf"),
-        "save_path": load_param("save_path", "models/checkpoints/"),
-        "save_prefix": load_param("save_prefix", "model"),
-        "start_position": load_param("start_position", [0, 0, 0.2]),
-        "FORWARD_VEL_WEIGHT": load_param("FORWARD_VEL_WEIGHT", 1.0),
-        "UPRIGHT_REWARD_WEIGHT": load_param("UPRIGHT_REWARD_WEIGHT", 0.5),
-        "ACTION_PENALTY_WEIGHT": load_param("ACTION_PENALTY_WEIGHT", 0.01),
-        "SHAKE_PENALTY_WEIGHT": load_param("SHAKE_PENALTY_WEIGHT", 0.01),
-        "JUMP_PENALTY_WEIGHT": load_param("JUMP_PENALTY_WEIGHT", 5.0),
-        "HIGH_ALTITUDE_PENALTY_WEIGHT": load_param("HIGH_ALTITUDE_PENALTY_WEIGHT", 2.0),
-        "FALLEN_PENALTY": load_param("FALLEN_PENALTY", 20.0),
-        "GOAL_APPROACH_WEIGHT": load_param("GOAL_APPROACH_WEIGHT", 2.0),
-        "GOAL_REACHED_BONUS": load_param("GOAL_REACHED_BONUS", 100.0)
-    }
-    for key, value in ROBOTS.get(default_params["robot_name"], {}).items():
-        if key not in default_params:
-            default_params[key] = value
 
-    return default_params
+def load_all_params(robot_name):
+    ''' Load all parameters from config.py, using zero if not found.'''
+    
+    possible_params = [
+        'GOAL_APPROACH_WEIGHT',
+        'GOAL_REACHED_BONUS',
+        'UPRIGHT_REWARD_WEIGHT',
+        'ACTION_PENALTY_WEIGHT',
+        'SHAKE_PENALTY_WEIGHT',
+        'SURVIVAL_BONUS',
+        'FALLEN_PENALTY',
+        'FORWARD_VEL_WEIGHT',
+        'JUMP_PENALTY_WEIGHT',
+        'HIGH_ALTITUDE_PENALTY_WEIGHT'
+    ]
+    params = {}
+    for param in possible_params:
+        params[param] = ROBOTS[robot_name].get(param, 0.0)  # Default to 0.0 if not found
+    print("Loaded Parameters: ", params)
+    return params
 
 def select_robot(load_model=True):
     ''' Returns URDF file path, save path, save prefix for a given robot name. '''
