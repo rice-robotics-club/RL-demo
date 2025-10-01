@@ -31,8 +31,6 @@ ROBOTS = {
         'save_prefix': 'servobot_model',
         'start_position': [0, 0, 0.2],
          ### WEIGHTS FOR TRAINING ###
-        'GOAL_APPROACH_WEIGHT': 5.0,
-        'GOAL_REACHED_BONUS': 200.0,  # Large bonus on touching the goal box
         'UPRIGHT_REWARD_WEIGHT': 0.5,
         'ACTION_PENALTY_WEIGHT': 0.1,
         'SHAKE_PENALTY_WEIGHT': 0.05,
@@ -41,7 +39,9 @@ ROBOTS = {
         'FORWARD_VEL_WEIGHT': 4.0,
         # New: discourage jumping/high vertical motion.
         'JUMP_PENALTY_WEIGHT': 0.1,     # Penalize excessive vertical velocity
-        'HIGH_ALTITUDE_PENALTY_WEIGHT': 0.1  # Penalize staying too high above ground
+        'HIGH_ALTITUDE_PENALTY_WEIGHT': 0.1,  # Penalize staying too high above ground
+        # New: Home Position Weight
+        'HOME_POSITION_PENALTY_WEIGHT': 0.1  # Penalize distance from home position
     },
 
     

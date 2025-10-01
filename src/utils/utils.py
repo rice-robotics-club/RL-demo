@@ -17,7 +17,8 @@ def load_all_params(robot_name):
         'FALLEN_PENALTY',
         'FORWARD_VEL_WEIGHT',
         'JUMP_PENALTY_WEIGHT',
-        'HIGH_ALTITUDE_PENALTY_WEIGHT'
+        'HIGH_ALTITUDE_PENALTY_WEIGHT',
+        'HOME_POSITION_PENALTY_WEIGHT'
     ]
     params = {}
     for param in possible_params:
@@ -102,3 +103,24 @@ def select_robot(load_model=True):
             return ROBOTS[robot_name]['urdf_file'], ROBOTS[robot_name]['save_path'], ROBOTS[robot_name]['save_prefix']
     else:
         raise ValueError(f"Robot '{robot_name}' not found in configuration. If this isn't a typo, please update config.py to add it!")
+
+def plot_moving_average(data, window_size=100):
+    ''' Plots a moving average of the given data with the specified window size. '''
+    import matplotlib.pyplot as plt
+    import numpy as np
+
+    if len(data) < window_size:
+        print("Data length is less than window size. Cannot compute moving average.")
+        return
+
+    cumsum = np.cumsum(np.insert(data, 0, 0)) 
+    # ha ha
+    moving_aves = (cumsum[window_size:] - cumsum[:-window_size]) / window_size
+
+    plt.figure(figsize=(10, 5))
+    plt.plot(moving_aves)
+    plt.title(f'Moving Average (window size={window_size})')
+    plt.xlabel('Episode')
+    plt.ylabel('Average Reward')
+    plt.grid()
+    plt.show()

@@ -86,8 +86,7 @@ class BaseEnv(gym.Env):
                  render_mode=None, 
                  urdf_filename="simple_quadruped.urdf", 
                  start_position=[0, 0, 1],
-                 target_box_center=[10.0, 0.0], 
-                 target_box_size=[1.0, 1.0, 1.0]):
+                 target_speed = .5,):
         super(BaseEnv, self).__init__()
         '''
         This class implements the custom Gym environment for our robot RL training!
@@ -130,23 +129,14 @@ class BaseEnv(gym.Env):
 
         base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         self.start_position = base_pos
-        # New: create the target box.
-        self.target_box_center = np.array(target_box_center, dtype=np.float32)
-        self.target_box_size = np.array(target_box_size, dtype=np.float32)
-        box_half_extents = self.target_box_size / 2.0
-        box_visual_shape_id = p.createVisualShape(p.GEOM_BOX, halfExtents=box_half_extents, rgbaColor=[0, 1, 0, 0.8])
-        box_collision_shape_id = p.createCollisionShape(p.GEOM_BOX, halfExtents=box_half_extents)
-        self.box_id = p.createMultiBody(
-            baseMass=0,  # Static body (immovable)
-            baseCollisionShapeIndex=box_collision_shape_id,
-            baseVisualShapeIndex=box_visual_shape_id,
-            basePosition=[self.target_box_center[0], self.target_box_center[1], box_half_extents[2]]
-        )
-
-        self.last_distance_to_target = 0.0
         
         self.initialize_joints()
-            
+        
+        # Generate a random target velocity to start (in the x-y plane, with a 0 component in the z direction)
+        self.target_speed = target_speed
+        self.target_velocity = self.generate_random_target_velocity(target_speed)
+
+
         self.render_mode = render_mode
 
     def initialize_joints(self):
@@ -168,8 +158,8 @@ class BaseEnv(gym.Env):
             # 4. Linear velocity (3), 
             # 5. Angular velocity (3),
             # 6. Cosine and Sine of joint angles (2 values per joint)
-            # 7. Vector to target box center (2 values: x and y)
-            obs_space_shape = (num_joints * 4) + 13 + 2
+            # 7. Control Goal Velocity (3 values: x,y,z components)
+            obs_space_shape = (num_joints * 4) + 13 + 3
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
@@ -192,15 +182,23 @@ class BaseEnv(gym.Env):
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         
-        # Change: observe the vector to the center of the target box.
-        vec_to_target = self.target_box_center - np.array(base_pos[:2])
+        # Get the goal velocity vector
+        target_vel = self.target_velocity
 
         # Compose the full observation vector and return it
         obs = np.concatenate([
             joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
-            base_vel, base_angular_vel, vec_to_target
+            base_vel, base_angular_vel, target_vel
         ])
         return obs.astype(np.float32)
+
+    def generate_random_target_velocity(self, target_speed):
+        ''' Generates a random target velocity vector in the x-y plane with a 0 component in the z direction 
+        and a maginitude between min_speed and max_speed '''
+        angle = np.random.uniform(0, 2 * np.pi)
+        # Have some variation in the target speed to make the policy more robust
+        speed = np.random.uniform(target_speed - .25, target_speed + .25)
+        return np.array([speed * np.cos(angle), speed * np.sin(angle), 0])
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -218,9 +216,19 @@ class BaseEnv(gym.Env):
 
         self.steps_taken = 0
         
-        base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
-        self.last_distance_to_target = np.linalg.norm(self.target_box_center - np.array(base_pos[:2]))
+        # Define some stable 'home' position array for each joint (straight down, angle of 0)
+        self.home_position = [0 for _ in self.joint_indices]
+
+
+        # New target velocity for this episode
+        self.target_velocity = self.generate_random_target_velocity(self.target_speed)
         
+        # Render in pybullet GUI if enabled as a vector
+        if self.render_mode == 'human':
+            target_start = [0, 0, 0.1]
+            target_end = [self.target_velocity[0] * 10, self.target_velocity[1] * 10, 0.1]
+            p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=300, lifeTime=30)
+
         observation = self._get_obs()
         info = self._get_info()
         return observation, info
@@ -239,17 +247,45 @@ class BaseEnv(gym.Env):
         # We also want to define a 'home' position for each joint (probably in the __init__ method) 
         # and punish actions that move too far away from it. This will keep the robot more stable.
 
-
         # Get position, orientation, velocity
+        current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
+        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        target_vel = self.target_velocity
 
-        # Reward Components:
-        # - Velocity in target direction
+        ## Reward Components: ##
+        # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity
+        goal_component = np.dot(base_vel, target_vel) / (np.linalg.norm(target_vel) + 1e-6)
+        goal_velocity_reward = self.FORWARD_VEL_WEIGHT * max(goal_component, 0.0)
+
         # - Uprightness
-        # - Penalties for large actions, shaking, falling, jumping, high altitude
+        rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
+        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+        uprightness = local_up_vector[2]
+        upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
 
+        ## - Penalties: ##
+        # - Shaking
+        shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
+        # - Falling
+        is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
+        fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
+        # - Distance from home position 
+        joint_states = p.getJointStates(self.robot_id, self.joint_indices)
+        joint_positions = np.array([state[0] for state in joint_states])
+        home_deviation = np.sum(np.square(joint_positions - np.array(self.home_position)))
+        home_penalty = self.HOME_POSITION_PENALTY_WEIGHT * home_deviation
+        # - Jumping
+        jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
+        # - High Altitude
+        high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
 
-        pass
-
+        # Sum all components, return total reward
+        total_reward = (
+            goal_velocity_reward + upright_reward - home_penalty -
+            shake_penalty - fallen_penalty - jump_penalty - high_alt_pen
+        )
+        return total_reward
+    
     def calculate_step_reward(self, action):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
@@ -262,23 +298,11 @@ class BaseEnv(gym.Env):
 
         # --- Reward function terms ---
         
-        # Approach reward: reward for reducing distance to our box target (centered at target_box_center)
-        current_distance_to_target = np.linalg.norm(self.target_box_center - np.array(current_base_pos[:2]))
-        # Calculate the change in distance to the target
-        distance_gained = self.last_distance_to_target - current_distance_to_target
-        # Calculate the approach reward
-        approach_reward = self.GOAL_APPROACH_WEIGHT * distance_gained
-        to_target = self.target_box_center - np.array(current_base_pos[:2])
-        dist = np.linalg.norm(to_target) + 1e-6
-        dir_unit = to_target / dist
-
-        # Instantaneous speed in the direction of the target (clamped to >= 0).
         # Simple forward speed: use the robot's base x velocity
         forward_speed = max(base_vel[0], 0.0)
 
         # Calculate the reward for 'forwards movement' towards the target
         forward_reward = self.FORWARD_VEL_WEIGHT * forward_speed
-        self.last_distance_to_target = current_distance_to_target
 
         # Upright reward: reward for keeping the robot upright (based on local up vector's Z component)
         rot_matrix = p.getMatrixFromQuaternion(p.getBasePositionAndOrientation(self.robot_id)[1])
@@ -302,12 +326,12 @@ class BaseEnv(gym.Env):
         high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
         step_reward -= (jump_penalty + high_alt_pen)
         step_reward = (
-            approach_reward + forward_reward + upright_reward -
+            forward_reward + upright_reward -
             action_penalty - shake_penalty - fallen_penalty
         )
         
         # DEBUG: Print out all the reward components
-        #print(f"Step Reward Breakdown: Approach: {approach_reward:.2f}, Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
+        #print(f"Step Reward Breakdown: Forward: {forward_reward:.2f}, Upright: {upright_reward:.2f}, "
         #      f"Action Penalty: {action_penalty:.2f}, Shake Penalty: {shake_penalty:.2f}, Fallen Penalty: {fallen_penalty:.2f}, "
         #      f"Jump Penalty: {jump_penalty:.2f}, High Alt Penalty: {high_alt_pen:.2f} => Total: {step_reward:.2f}")
 
@@ -330,7 +354,7 @@ class BaseEnv(gym.Env):
                 p.stepSimulation()
                 self.steps_taken += 1
 
-                total_reward += self.calculate_step_reward(action)
+                total_reward += self.calculate_step_reward_alternate(action)
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
@@ -361,13 +385,6 @@ class BaseEnv(gym.Env):
 
             # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
 
-            # 4. Check for success
-            contact_points = p.getContactPoints(bodyA=self.robot_id, bodyB=self.box_id)
-            if len(contact_points) > 0 and not truncated:
-                total_reward += self.GOAL_REACHED_BONUS
-                truncated = True
-                print("🎉🎉🎉 Goal Touched! 🎉🎉🎉")
-
             info = self._get_info()
 
             return self._get_obs(), total_reward, terminated, truncated, info
@@ -379,8 +396,6 @@ class BaseEnv(gym.Env):
         info = {}
         base_pos, base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
-        to_target = self.target_box_center - np.array(base_pos[:2])
-        dist_to_target = np.linalg.norm(to_target)
 
         rot_matrix = p.getMatrixFromQuaternion(base_orient)
         local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
@@ -390,7 +405,6 @@ class BaseEnv(gym.Env):
         info['base_orientation'] = base_orient
         info['base_velocity'] = base_vel
         info['base_angular_velocity'] = base_angular_vel
-        info['distance_to_target'] = dist_to_target
         info['uprightness'] = uprightness
 
         return info
@@ -404,16 +418,10 @@ class BaseEnv(gym.Env):
 if __name__ == "__main__":
     urdf_file, save_path, save_prefix, model_path = utils.select_robot()
 
-    # Set target box center [x, y] and size [width, depth, height].
-    box_center = [12.0, 3.0]
-    box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
-
     # Pass box parameters into the environment.
     env = BaseEnv(
         render_mode='human', 
         urdf_filename=urdf_file, 
-        target_box_center=box_center,
-        target_box_size=box_size
     )
     
     model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
@@ -424,7 +432,6 @@ if __name__ == "__main__":
         name_prefix=save_prefix
     )
     
-    print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
         model.learn(total_timesteps=1000000, callback=checkpoint_callback)  # This task may require longer training
     except KeyboardInterrupt:
