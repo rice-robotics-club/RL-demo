@@ -1,4 +1,5 @@
 ## Setting up the Environment
+
 - Navigate to the folder this is in and run ```conda install --file requirements.txt```. This will ensure you don't just have the right packages and stuff, but that you also have the right versions and right python versions and whatnot to make sure it works properly. This approach should make it way easier to onboard new members and also prevent bugs from version mismatch from happening hopefully
 
 NOTE: i set this up with some guesswork so if this environment doesn't match the environment that the people who actually got this running used, can yall please update the requirements.txt file rq with ```conda list -e > requirements.txt```? thx, - clay
