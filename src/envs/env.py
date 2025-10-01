@@ -265,19 +265,17 @@ class BaseEnv(gym.Env):
         # We have a huge penalty for falling over. This is a simple check to see if it's done that.
         # We check if the robot's base is too low or if it's tilted too far over.
         is_fallen = current_base_pos[2] < 0.6 or uprightness < 0.5
+        fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
         
         step_reward = 0
-        if not is_fallen:
-            upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-            jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
-            high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
-            step_reward -= (jump_penalty + high_alt_pen)
-            step_reward = (
-                approach_reward + forward_reward + upright_reward -
-                action_penalty - shake_penalty
-            )
-        else:
-            step_reward = -self.FALLEN_PENALTY 
+        upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
+        jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
+        high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
+        step_reward -= (jump_penalty + high_alt_pen)
+        step_reward = (
+            approach_reward + forward_reward + upright_reward -
+            action_penalty - shake_penalty - fallen_penalty
+        )
             
         return step_reward
     
