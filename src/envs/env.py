@@ -155,7 +155,7 @@ class BaseEnv(gym.Env):
                 joint_info = p.getJointInfo(self.robot_id, i)
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
-            self.action_space = spaces.Box(low=-1.57, high=1.57, shape=(num_joints,), dtype=np.float32)
+            self.action_space = spaces.Box(low=-1, high=1, shape=(num_joints,), dtype=np.float32)
 
             # Define the size of our observation space based on several components:
             # 1. Joint positions and velocities (2 values per joint)
@@ -293,7 +293,7 @@ class BaseEnv(gym.Env):
                 for i, joint_index in enumerate(self.joint_indices):
                     p.setJointMotorControl2(
                         self.robot_id, joint_index, p.POSITION_CONTROL,
-                        targetPosition=action[i], force=self.action_force_limit
+                        targetPosition= 1.57 * action[i], force=self.action_force_limit
                     )
                 p.stepSimulation()
                 self.steps_taken += 1
