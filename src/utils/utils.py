@@ -22,7 +22,10 @@ def load_all_params(robot_name):
     params = {}
     for param in possible_params:
         params[param] = ROBOTS[robot_name].get(param, 0.0)  # Default to 0.0 if not found
-    print("Loaded Parameters: ", params)
+    OutputString = "Loaded Parameters: \n==========================\n"
+    for key, value in params.items():
+        OutputString += f"{key} = {value}, \n" 
+    print(OutputString)
     return params
 
 def select_robot(load_model=True):

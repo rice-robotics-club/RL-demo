@@ -103,13 +103,11 @@ class BaseEnv(gym.Env):
 
         # Environment constants
         self.time_step = 1.0 / 240.0
-        self.episode_duration = 3.0  # Slightly longer to allow exploration
+        self.episode_duration = 10.0  # Slightly longer to allow exploration
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 20
         
-        self.action_skip = 2 
-        # Note: this was previously too high, leading to the robot only being able to make one or two moves before falling over.
-        # 2-5 seems like a reasonable constraint. 
+        self.action_skip = 24
 
         params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
