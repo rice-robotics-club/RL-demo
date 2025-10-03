@@ -29,5 +29,5 @@ environment:
 
 5. To update the environment, in the case that `environment.yml` changes, you can run this command:
     ```shell
-    conda env update
+    conda env update --file environment.yml --prune
     ```
