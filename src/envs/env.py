@@ -200,6 +200,11 @@ class BaseEnv(gym.Env):
         speed = np.random.uniform(target_speed - .25, target_speed + .25)
         return np.array([speed * np.cos(angle), speed * np.sin(angle), 0])
 
+    def generate_random_orientation_vector(self):
+        ''' Generates a random orientation command (yaw angle in radians between -pi and pi) '''
+        theta = np.random.uniform(-np.pi, np.pi)
+        return [math.cos(theta), math.sin(theta), 0]
+
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
         
@@ -226,7 +231,14 @@ class BaseEnv(gym.Env):
 
         # Render in pybullet GUI if enabled as a vector
         if self.render_mode == 'human':
-            
+            # Draw the robot's current orientation vector
+            rot_matrix = p.getMatrixFromQuaternion(start_orientation)
+            forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
+
+            origin = [start_position[0], start_position[1], start_position[2] + 0.1]
+            orientation_end = [origin[0] + forward_vector[0], origin[1] + forward_vector[1], origin[2] + forward_vector[2]]
+            p.addUserDebugLine(origin, orientation_end, lineColorRGB=[1, 0, 0], lineWidth=3, lifeTime=5)
+
             # Draw the target velocity vector
             if self.debug_line_id is not None:
                 p.removeUserDebugItem(self.debug_line_id)
@@ -257,7 +269,13 @@ class BaseEnv(gym.Env):
         # Get position, orientation, velocity
         current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
+        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+        forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
+
+        # Get the target velocity and orientation vectors
         target_vel = self.target_velocity
+        target_orient = self.target_orientation
 
         ## Reward Components: ##
         # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity
@@ -266,8 +284,7 @@ class BaseEnv(gym.Env):
         goal_velocity_reward = self.FORWARD_VEL_WEIGHT * goal_component
 
         # - Uprightness
-        rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
-        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
+
         uprightness = local_up_vector[2]
         upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
         
@@ -276,8 +293,8 @@ class BaseEnv(gym.Env):
         survival_reward = self.SURVIVAL_WEIGHT * steps_taken if not is_fallen else 0.0
         
         # Matching orientation with the target velocity direction (encourage facing the direction of movement)
-        # This can be done by projecting the robot's forward vector onto the target velocity direction
-        forward_vector = np.array([rot_matrix[0], rot_matrix[3], rot_matrix[6]])
+   
+
         target_direction = target_vel / (np.linalg.norm(target_vel) + 1e-6)
         orientation_alignment = np.dot(forward_vector, target_direction)
         orientation_reward = self.ORIENTATION_REWARD_WEIGHT * max(0.0, orientation_alignment)
@@ -319,6 +336,16 @@ class BaseEnv(gym.Env):
         return total_reward
         # DEBUG: Print out all the reward components
 
+    def update_config(self, new_config):
+        '''
+        Update environment parameters based on a new configuration dictionary.
+        '''
+        for key, value in new_config.items():
+            if hasattr(self, key):
+                setattr(self, key, value)
+                print(f"Updated {key} to {value}")
+            else:
+                print(f"Warning: {key} is not a valid parameter of the environment.")
     
     def step(self, action):
             """
