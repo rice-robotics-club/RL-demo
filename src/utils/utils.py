@@ -22,6 +22,8 @@ def load_all_params(robot_name):
         'TILT_PENALTY_WEIGHT',
         'ORIENTATION_REWARD_WEIGHT',
         'ACTION_LIMIT',
+        'INITIAL_MOMENTUM',
+        'TARGET_SPEED',
     ]
     params = {}
     for param in possible_params:
