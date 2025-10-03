@@ -43,5 +43,6 @@ ROBOTS = {
         'HOME_POSITION_PENALTY_WEIGHT': .5,  # Penalize distance from home position
         'TILT_PENALTY_WEIGHT': 0.5,  # Penalize excessive tilting (pitch/roll)
         'ORIENTATION_REWARD_WEIGHT': 1  # Reward for facing the direction of movement
+        
     },
 }

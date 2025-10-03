@@ -5,30 +5,34 @@ import pybullet as p
 import os 
 
 class CurriculumTrainer:
-    def __init__(self, env, model, config):
+    def __init__(self, env, model, config, save_path='./models/curriculum/'):
         self.env = env
         self.model = model
         self.config = config
         self.total_steps = 0
-    
+        self.savedir = save_path
+        if not os.path.exists(self.savedir):
+            os.makedirs(self.savedir)
 
     def run(self, total_steps):
         self.total_steps = total_steps
-        for step_interval in range(total_steps//10000):
+        for step_interval in range(total_steps//1000):
             
-            phase_name, phase_config = self.get_curriculum_info(step_interval * 10000)
-            print(f"Training Phase: {phase_name} | Steps: {step_interval * 10000} to {(step_interval + 1) * 10000}")
+            phase_name, phase_config = self.get_curriculum_info(step_interval * 1000)
+            
+            if step_interval % 10 == 0: 
+                print(f"Training Phase: {phase_name} | Steps: {step_interval * 1000} to {(step_interval + 1) * 1000}")
             self.env.update_config(phase_config)
             
             # Put each phase's models in a separate folder
             if phase_name == "Stand Still":
-                save_path = './models/stand_still/'
+                save_path = self.savedir + 'stand_still/'
             elif phase_name == "Turn to Face Orientation":
-                save_path = './models/turn_orientation/'
+                save_path = self.savedir + 'turn_orientation/'
             elif phase_name == "Movement":
-                save_path = './models/movement/'
+                save_path = self.savedir + 'movement/'
             else:
-                save_path = './models/other/'
+                save_path = self.savedir + 'other/'
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
             print(f"Saving models to: {save_path}")
@@ -55,23 +59,25 @@ class CurriculumTrainer:
         if step < phase_duration:
             phase_name = "Stand Still"
             # Phase 1: Learn to stand still against initial momentum
-            config['target_speed'] = 0.0
-            config['orientation_command'] = None
-            config['initial_momentum'] = min(1.0, step / phase_duration)  # Ramp up initial momentum from 0 to 1
+            config['TARGET_SPEED'] = 0.0
+            config['FORWARD_VEL_WEIGHT'] = 0.0
+            config['ORIENTATION_REWARD_WEIGHT'] = 0.0  # No orientation weight in this phase
+            config['INITIAL_MOMENTUM'] = min(1.0, step / phase_duration)  # Ramp up initial momentum from 0 to 1
         elif step < 2 * phase_duration:
             phase_name = "Turn to Face Orientation"
             # Phase 2: Learn to turn to face a random orientation command
-            config['target_speed'] = 0.0
-            if step % 1000 == 0:  # Change orientation command every 1000 steps
-                config['orientation_command'] = np.random.uniform(-np.pi, np.pi)
-            config['initial_momentum'] = 1.0  # Full initial momentum
+            config['TARGET_SPEED'] = 0.0
+            config['FORWARD_VEL_WEIGHT'] = 0.0
+            config['ORIENTATION_REWARD_WEIGHT'] = 1.0  # Full orientation weight
+            config['INITIAL_MOMENTUM'] = 1.0  # Full initial momentum
         else:
             phase_name = "Movement"
             # Phase 3: Learn to walk in a given direction with target speed
-            if step % 1000 == 0:  # Change target speed every 1000 steps
-                config['target_speed'] = np.random.uniform(0.2, 1.0)  # Random target speed between 0.2 and 1.0 m/s
-            config['orientation_command'] = None
-            config['initial_momentum'] = 1.0  # Full initial momentum
+            if step % 1000 == 0:  # increase target speed every 1000 steps
+                config['TARGET_SPEED'] = min(1.0, config.get('TARGET_SPEED', 0.0) + 0.1)  # Increase target speed up to 1.0
+            config['FORWARD_VEL_WEIGHT'] = 100.0  # Full forward velocity weight
+            config['ORIENTATION_REWARD_WEIGHT'] = 1.0  # Full orientation weight
+            config['INITIAL_MOMENTUM'] = 1.0  # Full initial momentum
 
         return phase_name, config
 
@@ -79,26 +85,17 @@ if __name__ == "__main__":
     from src.envs import env
     from src.utils import utils
 
-    urdf_file, save_path, save_prefix, model_path = utils.select_robot()
+    urdf_file, save_path, save_prefix = utils.select_robot(load_model = False)
     min_z = env.get_min_z(urdf_file)
-    base_env = env.BaseEnv(render_mode='human', urdf_filename=urdf_file, start_position=[0, 0, -min_z])
+    base_env = env.BaseEnv(render_mode='headless', urdf_filename=urdf_file, start_position=[0, 0, -min_z])
 
-    if not os.path.exists(model_path):
-        print(f"Error: Model file not found at {model_path}")
-        print("Please train your model first using train.py.")
-        exit(1)
-    else:
-        # Load the trained model
-        model = PPO.load(model_path, env=base_env, device='cpu')
+    model = PPO("MlpPolicy", base_env, verbose=1, n_steps=2048)
 
     # Initial configuration for curriculum training
     initial_config = {
-        'target_speed': 0.0,
-        'orientation_command': None,
-        'initial_momentum': 0.0,
         # Add other config parameters as needed
     }
 
-    trainer = CurriculumTrainer(base_env, model, initial_config)
+    trainer = CurriculumTrainer(base_env, model, initial_config, save_path=save_path)
     trainer.run(total_steps=300000)  # Total of 300k steps for curriculum training
     

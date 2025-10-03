@@ -136,6 +136,11 @@ class BaseEnv(gym.Env):
         self.target_speed = target_speed
         self.target_velocity = self.generate_random_target_velocity(target_speed)
 
+        # Generate a random target orientation to start (yaw angle in radians between -pi and pi)
+        self.target_orientation = self.generate_random_orientation_vector()
+
+        # Generate an initial momentum vector to start (in the x-y plane, with a 0 component in the z direction)
+        self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
 
         self.render_mode = render_mode
 
@@ -204,6 +209,12 @@ class BaseEnv(gym.Env):
         ''' Generates a random orientation command (yaw angle in radians between -pi and pi) '''
         theta = np.random.uniform(-np.pi, np.pi)
         return [math.cos(theta), math.sin(theta), 0]
+    
+    def generate_random_initial_momentum(self, strength):
+        ''' Generates a random initial momentum vector in the x-y plane with a magnitude up to 'strength' '''
+        angle = np.random.uniform(0, 2 * np.pi)
+        momentum = np.random.uniform(0, strength)
+        return np.array([momentum * np.cos(angle), momentum * np.sin(angle), 0])
 
     def reset(self, seed=None, options=None):
         super().reset(seed=seed)
@@ -226,8 +237,13 @@ class BaseEnv(gym.Env):
 
 
         # New target velocity for this episode
-        self.target_velocity = self.generate_random_target_velocity(self.target_speed)
-        
+        self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
+        # New target orientation for this episode
+        self.target_orientation = self.generate_random_orientation_vector()
+
+        # New initial momentum for this episode
+        self.initial_momentum_vector = self.generate_random_initial_momentum(strength=self.INITIAL_MOMENTUM)
+        p.resetBaseVelocity(self.robot_id, linearVelocity=self.initial_momentum_vector.tolist(), angularVelocity=[0,0,0])
 
         # Render in pybullet GUI if enabled as a vector
         if self.render_mode == 'human':
@@ -284,7 +300,6 @@ class BaseEnv(gym.Env):
         goal_velocity_reward = self.FORWARD_VEL_WEIGHT * goal_component
 
         # - Uprightness
-
         uprightness = local_up_vector[2]
         upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
         
