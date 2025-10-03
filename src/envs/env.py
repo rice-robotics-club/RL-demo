@@ -126,16 +126,19 @@ class BaseEnv(gym.Env):
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.start_position = start_position
         self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False)
-
+        
         base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         self.start_position = base_pos
-        
+        self.joint_limit = 1.57
+        self.action_factor = self.joint_limit
+        if self.ACTION_LIMIT >0:
+            self.action_factor *= self.ACTION_LIMIT
         self.initialize_joints()
-        
+        self.previous_action = np.zeros(self.action_space.shape)
         # Generate a random target velocity to start (in the x-y plane, with a 0 component in the z direction)
         self.target_speed = target_speed
         self.target_velocity = self.generate_random_target_velocity(target_speed)
-
+        self.default_position = [0 for _ in self.joint_indices]
 
         self.render_mode = render_mode
 
@@ -146,6 +149,9 @@ class BaseEnv(gym.Env):
                 joint_info = p.getJointInfo(self.robot_id, i)
                 if joint_info[2] == p.JOINT_REVOLUTE:
                     self.joint_indices.append(i)
+                # restrict joint angles
+                if len(joint_info) >= 9:
+                    self.joint_limit = min(self.joint_limit, joint_info[8],joint_info[9])
                 # restrict action force limit based on joint max force if available
                 if len(joint_info) >= 11:
                     self.action_force_limit = min(self.action_force_limit, joint_info[10])
@@ -238,6 +244,56 @@ class BaseEnv(gym.Env):
         info = self._get_info()
         return observation, info
     
+    def calculate_step_reward_new(self, action, steps_taken=0):
+        ''' 
+        This function implements the reward function described in https://federicosarrocco.com/blog/Making-Quadrupeds-Learning-To-Walk
+        '''
+
+        # NEW WITH THIS VERSION: 
+        # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
+        # We should get that and use it to calculate a reward for movement in the target direction. 
+        # There is no 'target box' in this setup - instead it's just trying to follow a velocity vector.
+       
+        # This target velocity should be fairly small (0.5 m/s?) to start with - 
+        # perhaps we can increase the speed as the training progresses?
+
+        # We also want to define a 'home' position for each joint (probably in the __init__ method) 
+        # and punish actions that move too far away from it. This will keep the robot more stable.
+
+        # Get position, orientation, velocity
+        current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
+        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        target_vel = self.target_velocity
+
+        # velocity commands
+        target_angular_vel = np.array([0,0,0])
+        target_z = self.start_position[2]
+
+        ## Reward Components: ##
+        # 1. Linear Velocity Tracking Reward
+        r_lin_vel = np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        # 2. Angular Velocity Tracking Reward
+        r_ang_vel = np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
+        # 3. Height Penalty
+        r_height = -(current_base_pos[2] - target_z)**2
+        # 4. Pose Similarity Penalty
+        joint_states = p.getJointStates(self.robot_id, self.joint_indices)
+        joint_positions = np.array([state[0] for state in joint_states])
+        r_pose = -(np.linalg.norm(joint_positions - np.array(self.default_position))**2)
+        # 5. Action Rate Penalty
+        r_action_rate = -np.linalg.norm(action-self.previous_action)**2
+        # 6. Vertical Velocity Penalty
+        r_lin_vel_z = -base_vel[2]**2
+        # 7. Roll and Pitch Penalty
+        rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
+        z_direction = np.array([rot_matrix[6], rot_matrix[7], rot_matrix[8]])
+        if not (0.99<np.linalg.norm(z_direction) < 1.01):
+            raise ValueError("Z direction vector is not normalized!")
+        r_rp = -(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
+
+        ## Calculate total reward:
+        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp)
+        return total_reward
     def calculate_step_reward(self, action, steps_taken=0):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
@@ -332,12 +388,12 @@ class BaseEnv(gym.Env):
                 for i, joint_index in enumerate(self.joint_indices):
                     p.setJointMotorControl2(
                         self.robot_id, joint_index, p.POSITION_CONTROL,
-                        targetPosition= 1.57 * action[i], force=self.action_force_limit
+                        targetPosition= self.action_factor*action[i]+self.default_position[i], force=self.action_force_limit
                     )
                 p.stepSimulation()
                 self.steps_taken += 1
                 # NEW: use alternate function, input steps taken for ramping survival reward
-                total_reward += self.calculate_step_reward(action, steps_taken=self.steps_taken)
+                total_reward += self.calculate_step_reward_new(action, steps_taken=self.steps_taken)
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
@@ -371,7 +427,7 @@ class BaseEnv(gym.Env):
                     self.fallen_id = p.addUserDebugText("FALLEN!", [0,0,1], textColorRGB=[1,0,0], textSize=2.5, lifeTime=.1)
                     
             # --- ▲▲▲ END OF CORRECTION ▲▲▲ ---
-
+            self.previous_action = action
             info = self._get_info()
 
             return self._get_obs(), total_reward, terminated, truncated, info

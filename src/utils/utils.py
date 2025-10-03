@@ -20,7 +20,8 @@ def load_all_params(robot_name):
         'HIGH_ALTITUDE_PENALTY_WEIGHT',
         'HOME_POSITION_PENALTY_WEIGHT',
         'TILT_PENALTY_WEIGHT',
-        'ORIENTATION_REWARD_WEIGHT'
+        'ORIENTATION_REWARD_WEIGHT',
+        'ACTION_LIMIT',
     ]
     params = {}
     for param in possible_params:
