@@ -46,6 +46,9 @@
             <geometry>
                 <sphere radius="0.01"/>
             </geometry>
+            <contact>
+                <lateral_friction value="0.9"/>
+            </contact>
         </collision>
     </link>
 
@@ -70,6 +73,9 @@
             <geometry>
                 <sphere radius="0.01"/>
             </geometry>
+            <contact>
+                <lateral_friction value="0.9"/>
+            </contact>
         </collision>
     </link>
 
@@ -94,6 +100,9 @@
             <geometry>
                 <sphere radius="0.01"/>
             </geometry>
+            <contact>
+                <lateral_friction value="0.9"/>
+            </contact>
         </collision>
     </link>
 
@@ -118,6 +127,9 @@
             <geometry>
                 <sphere radius="0.01"/>
             </geometry>
+            <contact>
+                <lateral_friction value="0.9"/>
+            </contact>
         </collision>
     </link>
 

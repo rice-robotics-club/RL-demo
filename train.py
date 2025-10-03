@@ -38,18 +38,13 @@ if __name__ == "__main__":
     
     urdf_file, save_path, save_prefix = utils.select_robot(load_model=False)
 
-    # Set target box center [x, y] and size [width, depth, height].
-    box_center = [12.0, 3.0]
-    box_size = [2.0, 2.0, 1.0]  # A 2x2x1 m box
-
     # Pass box parameters into the environment.
     min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
         render_mode=render_mode, 
         urdf_filename=urdf_file, 
         start_position=[0, 0, -min_z],
-        target_box_center=box_center,
-        target_box_size=box_size
+        target_speed = .5,
     )
     use_existing_model = input("Use existing model if available? (y/n): ").strip().lower() == 'y'
     if use_existing_model:
@@ -91,7 +86,6 @@ if __name__ == "__main__":
         name_prefix=save_prefix
     )
     
-    print(f"Starting training... Target Box Center: {box_center}, Size: {box_size}")
     try:
 
         model.learn(total_timesteps=2000000, callback=checkpoint_callback)  # This task may require longer training
