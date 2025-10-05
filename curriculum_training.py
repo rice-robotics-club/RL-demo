@@ -20,8 +20,7 @@ class CurriculumTrainer:
             
             phase_name, phase_config = self.get_curriculum_info(step_interval * 1000)
             
-            if step_interval % 10 == 0: 
-                print(f"Training Phase: {phase_name} | Steps: {step_interval * 1000} to {(step_interval + 1) * 1000}")
+            
             self.env.update_config(phase_config)
             
             # Put each phase's models in a separate folder
@@ -35,11 +34,15 @@ class CurriculumTrainer:
                 save_path = self.savedir + 'other/'
             if not os.path.exists(save_path):
                 os.makedirs(save_path)
-            print(f"Saving models to: {save_path}")
 
-            callback = CheckpointCallback(save_freq=5000, save_path=save_path, name_prefix='curriculum_model')
-            self.model = self.model.learn(total_timesteps=10000, reset_num_timesteps=False, callback=callback)
+            if step_interval % 10 == 0: 
+                print(f"Training Phase: {phase_name} | Steps: {step_interval * 1000} to {(step_interval + 1) * 1000}")
+                print(f"Saving models to: {save_path}")
+                self.model.save(os.path.join(save_path, f'curriculum_model_{step_interval}.zip'))
 
+            callback = CheckpointCallback(save_freq=total_steps, save_path=save_path, name_prefix='curriculum_model')
+            self.model = self.model.learn(total_timesteps=1000, reset_num_timesteps=False, callback=callback)
+        self.model.save(os.path.join(self.savedir, 'final_curriculum_model'))
            
     def get_curriculum_info(self, step):
         """
@@ -63,6 +66,10 @@ class CurriculumTrainer:
             config['FORWARD_VEL_WEIGHT'] = 0.0
             config['ORIENTATION_REWARD_WEIGHT'] = 0.0  # No orientation weight in this phase
             config['INITIAL_MOMENTUM'] = min(1.0, step / phase_duration)  # Ramp up initial momentum from 0 to 1
+            config['HOME_POSITION_PENALTY_WEIGHT'] = 0.5
+            config['FALLEN_PENALTY'] = 20.0  # Moderate fallen penalty to encourage staying upright
+            config['TILT_PENALTY_WEIGHT'] = 0.5  # Mild tilt penalty to encourage upright posture
+            
         elif step < 2 * phase_duration:
             phase_name = "Turn to Face Orientation"
             # Phase 2: Learn to turn to face a random orientation command
@@ -70,6 +77,9 @@ class CurriculumTrainer:
             config['FORWARD_VEL_WEIGHT'] = 0.0
             config['ORIENTATION_REWARD_WEIGHT'] = 1.0  # Full orientation weight
             config['INITIAL_MOMENTUM'] = 1.0  # Full initial momentum
+            config['HOME_POSITION_PENALTY_WEIGHT'] = 0.05  # Reduced home position penalty
+            config['FALLEN_PENALTY'] = 5.0  # Increased fallen penalty to encourage staying upright
+            config['TILT_PENALTY_WEIGHT'] = 0.1  # Reduce tilting (pitch/roll) penalty to allow more dynamic movement
         else:
             phase_name = "Movement"
             # Phase 3: Learn to walk in a given direction with target speed
@@ -78,6 +88,9 @@ class CurriculumTrainer:
             config['FORWARD_VEL_WEIGHT'] = 100.0  # Full forward velocity weight
             config['ORIENTATION_REWARD_WEIGHT'] = 1.0  # Full orientation weight
             config['INITIAL_MOMENTUM'] = 1.0  # Full initial momentum
+            config['HOME_POSITION_PENALTY_WEIGHT'] = 0.01  # Further reduced home position penalty
+            config['FALLEN_PENALTY'] = 20.0  # Increased fallen penalty to encourage staying upright
+            config['TILT_PENALTY_WEIGHT'] = 0.05  # Reduce tilting (pitch/roll) penalty to allow more dynamic movement
 
         return phase_name, config
 
@@ -97,5 +110,5 @@ if __name__ == "__main__":
     }
 
     trainer = CurriculumTrainer(base_env, model, initial_config, save_path=save_path)
-    trainer.run(total_steps=300000)  # Total of 300k steps for curriculum training
+    trainer.run(total_steps=3000000)  # Total of 300k steps for curriculum training
     

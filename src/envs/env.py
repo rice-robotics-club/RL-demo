@@ -170,7 +170,8 @@ class BaseEnv(gym.Env):
             # 5. Angular velocity (3),
             # 6. Cosine and Sine of joint angles (2 values per joint)
             # 7. Control Goal Velocity (3 values: x,y,z components)
-            obs_space_shape = (num_joints * 4) + 13 + 3
+            # 8. Control Goal Orientation (3 values: x,y,z components of a unit vector in the desired yaw direction)
+            obs_space_shape = (num_joints * 4) + 13 + 3 + 3
             self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
@@ -195,11 +196,14 @@ class BaseEnv(gym.Env):
         
         # Get the goal velocity vector
         target_vel = self.target_velocity
+        
+        # Get the goal orientation vector
+        target_orient = self.target_orientation
 
         # Compose the full observation vector and return it
         obs = np.concatenate([
             joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
-            base_vel, base_angular_vel, target_vel
+            base_vel, base_angular_vel, target_vel, target_orient
         ])
         return obs.astype(np.float32)
 
@@ -307,7 +311,7 @@ class BaseEnv(gym.Env):
         # 4. Pose Similarity Penalty
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = np.array([state[0] for state in joint_states])
-        r_pose = -(np.linalg.norm(joint_positions - np.array(self.default_position))**2)
+        r_pose = -(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
         # 5. Action Rate Penalty
         r_action_rate = -np.linalg.norm(action-self.previous_action)**2
         # 6. Vertical Velocity Penalty
@@ -430,7 +434,7 @@ class BaseEnv(gym.Env):
                 for i, joint_index in enumerate(self.joint_indices):
                     p.setJointMotorControl2(
                         self.robot_id, joint_index, p.POSITION_CONTROL,
-                        targetPosition= self.action_factor*action[i]+self.default_position[i], force=self.action_force_limit
+                        targetPosition= self.action_factor*action[i]+self.home_position[i], force=self.action_force_limit
                     )
                 p.stepSimulation()
                 self.steps_taken += 1
