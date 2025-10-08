@@ -1,8 +1,6 @@
 import numpy as np
 import typing
 
-from pybullet_envs.minitaur.robots.minitaur_constants import JOINT_NAMES
-
 _DType = typing.TypeVar("_DType", bound=np.generic)
 
 # Type for a numpy array of length 12, representing desired IK for each leg as [leg1..., leg2..., leg3..., leg4...]

@@ -26,6 +26,8 @@ from ..utils import utils
 
 from ..utils import config
 
+from ..utils.kinematics import IK
+
 
 '''
 Ideal Structure:
@@ -107,7 +109,7 @@ class BaseEnv(gym.Env):
         self.steps_per_episode = int(self.episode_duration / self.time_step)
         self.action_force_limit = 50
         
-        self.action_skip = 24
+        self.action_skip = 10
 
         params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
@@ -125,7 +127,7 @@ class BaseEnv(gym.Env):
 
         start_orientation = p.getQuaternionFromEuler([0, 0, 0])
         self.start_position = start_position
-        self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False)
+        self.robot_id = p.loadURDF(self.urdf_filename, self.start_position, start_orientation, useFixedBase=False,flags=p.URDF_USE_INERTIA_FROM_FILE)
         
         base_pos, _ = p.getBasePositionAndOrientation(self.robot_id)
         self.start_position = base_pos
@@ -134,7 +136,16 @@ class BaseEnv(gym.Env):
         if self.ACTION_LIMIT >0:
             self.action_factor *= self.ACTION_LIMIT
         self.initialize_joints()
+
+        # Define some stable 'home' position array for each joint (straight down, angle of 0)
+        self.home_position = [0 for _ in self.joint_indices]
+        ik = IK()
+        idle_cfg = ik.get_idle_cfg(height=0.18)
+        self.home_position = [0]*len(self.joint_indices)
+        for i in self.joint_indices:
+            self.home_position[i] = idle_cfg[self.get_joint_name[i]]
         self.previous_action = np.zeros(self.action_space.shape)
+
         # Generate a random target velocity to start (in the x-y plane, with a 0 component in the z direction)
         self.target_speed = target_speed
         self.target_velocity = self.generate_random_target_velocity(target_speed)
@@ -148,31 +159,33 @@ class BaseEnv(gym.Env):
         self.render_mode = render_mode
 
     def initialize_joints(self):
-            self.joint_indices = []
-            num_joints = p.getNumJoints(self.robot_id)
-            for i in range(num_joints):
-                joint_info = p.getJointInfo(self.robot_id, i)
-                if joint_info[2] == p.JOINT_REVOLUTE:
-                    self.joint_indices.append(i)
-                # restrict joint angles
-                if len(joint_info) >= 9:
-                    self.joint_limit = min(self.joint_limit, joint_info[8],joint_info[9])
-                # restrict action force limit based on joint max force if available
-                if len(joint_info) >= 11:
-                    self.action_force_limit = min(self.action_force_limit, joint_info[10])
-            self.action_space = spaces.Box(low=-1, high=1, shape=(num_joints,), dtype=np.float32)
+        self.joint_indices = []
+        self.get_joint_name = {}
+        num_joints = p.getNumJoints(self.robot_id)
+        for i in range(num_joints):
+            joint_info = p.getJointInfo(self.robot_id, i)
+            self.get_joint_name[i] = joint_info[1].decode('utf-8')
+            if joint_info[2] == p.JOINT_REVOLUTE:
+                self.joint_indices.append(i)
+            # restrict joint angles
+            if len(joint_info) >= 9:
+                self.joint_limit = min(self.joint_limit, joint_info[8],joint_info[9])
+            # restrict action force limit based on joint max force if available
+            if len(joint_info) >= 11:
+                self.action_force_limit = min(self.action_force_limit, joint_info[10])
+        self.action_space = spaces.Box(low=-1, high=1, shape=(num_joints,), dtype=np.float32)
 
-            # Define the size of our observation space based on several components:
-            # 1. Joint positions and velocities (2 values per joint)
-            # 2. Base position (3), 
-            # 3. Orientation (4), 
-            # 4. Linear velocity (3), 
-            # 5. Angular velocity (3),
-            # 6. Cosine and Sine of joint angles (2 values per joint)
-            # 7. Control Goal Velocity (3 values: x,y,z components)
-            # 8. Control Goal Orientation (3 values: x,y,z components of a unit vector in the desired yaw direction)
-            obs_space_shape = (num_joints * 4) + 13 + 3 + 3
-            self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
+        # Define the size of our observation space based on several components:
+        # 1. Joint positions and velocities (2 values per joint)
+        # 2. Base position (3), 
+        # 3. Orientation (4), 
+        # 4. Linear velocity (3), 
+        # 5. Angular velocity (3),
+        # 6. Cosine and Sine of joint angles (2 values per joint)
+        # 7. Control Goal Velocity (3 values: x,y,z components)
+        # 8. Control Goal Orientation (3 values: x,y,z components of a unit vector in the desired yaw direction)
+        obs_space_shape = (num_joints * 4) + 13 + 3 + 3
+        self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
         '''
@@ -241,9 +254,6 @@ class BaseEnv(gym.Env):
             )
 
         self.steps_taken = 0
-        
-        # Define some stable 'home' position array for each joint (straight down, angle of 0)
-        self.home_position = [0 for _ in self.joint_indices]
 
 
         # New target velocity for this episode
@@ -466,7 +476,7 @@ class BaseEnv(gym.Env):
             rotation_matrix = p.getMatrixFromQuaternion(final_orientation)
             final_up_vector = np.array([rotation_matrix[2], rotation_matrix[5], rotation_matrix[8]])
             if final_pos[2] < 0.1 or final_up_vector[2] < 0.3:
-                terminated = False
+                terminated = True
                 #print("🤖 Robot has fallen! Episode terminated. 🤖")
                 # Display a message in the GUI if in GUI mode
                 if self.render_mode == 'human':
