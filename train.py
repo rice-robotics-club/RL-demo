@@ -81,7 +81,7 @@ if __name__ == "__main__":
         model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=20000,
+        save_freq=200000,
         save_path=save_path,
         name_prefix=save_prefix
     )

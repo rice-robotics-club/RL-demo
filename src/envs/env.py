@@ -139,11 +139,12 @@ class BaseEnv(gym.Env):
 
         # Define some stable 'home' position array for each joint (straight down, angle of 0)
         self.home_position = [0 for _ in self.joint_indices]
-        ik = IK()
-        idle_cfg = ik.get_idle_cfg(height=0.18)
-        self.home_position = [0]*len(self.joint_indices)
-        for i in self.joint_indices:
-            self.home_position[i] = idle_cfg[self.get_joint_name[i]]
+        if 'servobot' in urdf_filename:
+            ik = IK()
+            idle_cfg = ik.get_idle_cfg(height=0.18)
+            self.home_position = [0]*len(self.joint_indices)
+            for i in self.joint_indices:
+                self.home_position[i] = idle_cfg[self.get_joint_name[i]]
         self.previous_action = np.zeros(self.action_space.shape)
 
         # Generate a random target velocity to start (in the x-y plane, with a 0 component in the z direction)
