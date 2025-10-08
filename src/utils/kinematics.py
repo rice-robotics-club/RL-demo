@@ -1,6 +1,8 @@
 import numpy as np
 import typing
 
+from pybullet_envs.minitaur.robots.minitaur_constants import JOINT_NAMES
+
 _DType = typing.TypeVar("_DType", bound=np.generic)
 
 # Type for a numpy array of length 12, representing desired IK for each leg as [leg1..., leg2..., leg3..., leg4...]
@@ -8,6 +10,21 @@ PosArray = typing.Annotated[np.typing.NDArray[_DType], typing.Literal[12]]
 
 # Type for a numpy array of length 12, representing configuration of ServoBot
 CfgArray = typing.Annotated[np.typing.NDArray[_DType], typing.Literal[12]]
+
+JOINT_NAMES = [
+    "FL_Hip",
+    "FL_TopLeg",
+    "FL_BotLeg",
+    "FR_Hip",
+    "FR_TopLeg",
+    "FR_BotLeg",
+    "BL_Hip",
+    "BL_TopLeg",
+    "BL_BotLeg",
+    "BR_Hip",
+    "BR_TopLeg",
+    "BR_BotLeg",
+]
 
 
 class IK:
@@ -77,15 +94,17 @@ class IK:
 
         return np.array(output_cfg) * self.output_mult
 
-    def get_idle_cfg(self, height=0.13) -> CfgArray:
+    def get_idle_cfg(self, height=0.13) -> dict[str, float]:
         """
         Returns a configuration array for
         :param height: robot height in meters
         :return: numpy array of shape (12,)
         """
         positions = np.array([0.0, 0.0, -height] * 4)
-        return self.solve(positions)
+        config = self.solve(positions)
+        return {JOINT_NAMES[i]: c for (i, c) in enumerate(config.tolist())}
 
-if __name__=="__main__":
+
+if __name__ == "__main__":
     ik = IK()
     print(ik.get_idle_cfg())
