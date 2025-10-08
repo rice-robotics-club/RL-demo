@@ -52,6 +52,8 @@ class IK:
         """
         output_cfg = []
 
+        positions += self.input_off
+
         for i in range(4):
             x, y, z = positions[3 * i:3 * i + 3]
             x2_z2 = x ** 2 + z ** 2
@@ -71,9 +73,9 @@ class IK:
                 * (a + y * self.c - y ** 2 - self.d)
             )
             th2 = np.acos((np.sin(th3) * self.calf * (y - self.off1) + b) / a)
-            output_cfg.append([th1, th2, th3])
+            output_cfg.extend([th1, th2, th3])
 
-        return np.array(output_cfg)
+        return np.array(output_cfg) * self.output_mult
 
     def get_idle_cfg(self, height=0.13) -> CfgArray:
         """
@@ -81,5 +83,9 @@ class IK:
         :param height: robot height in meters
         :return: numpy array of shape (12,)
         """
-        positions = np.array([0.0, 0.0, height] * 4)
+        positions = np.array([0.0, 0.0, -height] * 4)
         return self.solve(positions)
+
+if __name__=="__main__":
+    ik = IK()
+    print(ik.get_idle_cfg())
