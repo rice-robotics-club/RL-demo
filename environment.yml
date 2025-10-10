@@ -9,3 +9,6 @@ dependencies:
   - pybullet=3.25
   - gymnasium=0.28.1
   - stable-baselines3=2.3.2
+  - pip:
+    - onshape-to-robot
+    - stable_baselines3[extra]

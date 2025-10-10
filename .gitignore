@@ -4,3 +4,4 @@ __pycache__
 models
 .conda
 .idea
+training_plots
