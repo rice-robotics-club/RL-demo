@@ -19,7 +19,7 @@ import pybullet_data
 import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3 import PPO
-from stable_baselines3.common.callbacks import CheckpointCallback
+from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 import pandas as pd
 import matplotlib.pyplot as plt
 
