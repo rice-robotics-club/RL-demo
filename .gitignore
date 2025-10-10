@@ -2,5 +2,6 @@
 .vscode
 __pycache__
 models
+history
 .conda
 .idea

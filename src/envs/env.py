@@ -18,6 +18,9 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 import gymnasium as gym
+import pandas as pd
+import matplotlib.pyplot as plt
+
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -158,6 +161,10 @@ class BaseEnv(gym.Env):
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
 
         self.render_mode = render_mode
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
+        time_now = pd.Timestamp.now() 
+        self.reward_history_filename = f"history/reward_history_{time_now}.csv"
+        pd.DataFrame().to_csv(self.reward_history_filename, index=False)
 
     def initialize_joints(self):
         self.joint_indices = []
@@ -336,6 +343,12 @@ class BaseEnv(gym.Env):
 
         ## Calculate total reward:
         total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp)
+        new_history = pd.DataFrame({'step_taken':[steps_taken],'lin_vel':[r_lin_vel], 'ang_vel':[r_ang_vel], 'height':[r_height], 'pose':[r_pose], 'action_rate':[r_action_rate], 'lin_vel_z':[r_lin_vel_z], 'rp':[r_rp],'total':[total_reward]})
+        self.reward_history = pd.concat([self.reward_history,new_history], ignore_index=True)
+        if steps_taken == 0:
+            self.reward_history.to_csv(self.reward_history_filename, index=False)
+            if len(self.reward_history) > 100000:
+                self.reward_history = self.reward_history.iloc[-100000:]
         return total_reward
     def calculate_step_reward(self, action, steps_taken=0):
         ''' 
