@@ -24,6 +24,7 @@ def load_all_params(robot_name):
         'ACTION_LIMIT',
         'INITIAL_MOMENTUM',
         'TARGET_SPEED',
+        
     ]
     params = {}
     for param in possible_params:
@@ -58,7 +59,8 @@ def select_robot(load_model=True):
                 exit(1)
             best_model_name = model_directory_list[-1]
             best_model_path = os.path.join(ROBOTS[robot_name]['save_path'], best_model_name)
-            
+            model_path = best_model_path
+            print("Best Model Name: ", best_model_name)
             # Handle case with multiple models found
             if len(model_directory_list) > 1:
                 print("Multiple saved models found. Would you like to use the latest one? (y/n): ")
@@ -95,8 +97,8 @@ def select_robot(load_model=True):
                         exit(1)
                 else:
                     # Just use the latest (assuming it's last in the directory) model
-                    print("Using the latest model: [", best_model_name, "] by default!")
-                    model_path = best_model_path
+                    print("Using the latest model: [", model_path, "] by default!")
+                    
             print("Best Model Path: ", model_path)
         print("URDF File: ", ROBOTS[robot_name]['urdf_file'])
         print("Save Path: ", ROBOTS[robot_name]['save_path'])

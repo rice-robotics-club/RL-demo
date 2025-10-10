@@ -319,9 +319,11 @@ class BaseEnv(gym.Env):
         target_angular_vel = np.array([0,0,0])
         target_z = self.start_position[2]
 
+        is_fallen = current_base_pos[2] < 0.05
+
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward
-        r_lin_vel = np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
         # 2. Angular Velocity Tracking Reward
         r_ang_vel = np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
         # 3. Height Penalty
@@ -340,6 +342,11 @@ class BaseEnv(gym.Env):
         if not (0.99<np.linalg.norm(z_direction) < 1.01):
             raise ValueError("Z direction vector is not normalized!")
         r_rp = -(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
+        # 8. Survival Reward
+        r_survival = (self.SURVIVAL_WEIGHT * 1) if not is_fallen else 0.0
+        # 9. Fallen Penalty
+        r_fallen = -self.FALLEN_PENALTY if is_fallen else 0.0
+        # Orientation Reward (needs to be written to be a relative turn command rather than a fixed vector, but i will implement later)
 
         ## Calculate total reward:
         total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp)
