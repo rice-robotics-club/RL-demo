@@ -164,7 +164,7 @@ class BaseEnv(gym.Env):
         self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
         time_now = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         self.reward_history_filename = f"history/reward_history_{time_now}.csv"
-        pd.DataFrame().to_csv(self.reward_history_filename, index=False)
+        self.reward_history.to_csv(self.reward_history_filename, index=False)
 
     def initialize_joints(self):
         self.joint_indices = []
@@ -292,6 +292,9 @@ class BaseEnv(gym.Env):
 
         observation = self._get_obs()
         info = self._get_info()
+        if len(self.reward_history) >0:
+            self.reward_history.to_csv(self.reward_history_filename, index=False,mode='a', header=False)
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
         return observation, info
     
     def calculate_step_reward_new(self, action, steps_taken=0):
@@ -331,9 +334,9 @@ class BaseEnv(gym.Env):
         # 4. Pose Similarity Penalty
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = np.array([state[0] for state in joint_states])
-        r_pose = -0.1*(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
+        r_pose = -0.075*(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
         # 5. Action Rate Penalty
-        r_action_rate = -0.02*np.linalg.norm(action-self.previous_action)**2
+        r_action_rate = -0.015*np.linalg.norm(action-self.previous_action)**2
         # 6. Vertical Velocity Penalty
         r_lin_vel_z = -0.2*base_vel[2]**2
         # 7. Roll and Pitch Penalty
@@ -352,10 +355,6 @@ class BaseEnv(gym.Env):
         total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp)
         new_history = pd.DataFrame({'step_taken':[steps_taken],'lin_vel':[r_lin_vel], 'ang_vel':[r_ang_vel], 'height':[r_height], 'pose':[r_pose], 'action_rate':[r_action_rate], 'lin_vel_z':[r_lin_vel_z], 'rp':[r_rp],'total':[total_reward]})
         self.reward_history = pd.concat([self.reward_history,new_history], ignore_index=True)
-        if steps_taken == 0:
-            self.reward_history.to_csv(self.reward_history_filename, index=False)
-            if len(self.reward_history) > 100000:
-                self.reward_history = self.reward_history.iloc[-100000:]
         return total_reward
     def calculate_step_reward(self, action, steps_taken=0):
         ''' 

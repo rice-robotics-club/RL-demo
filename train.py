@@ -119,9 +119,10 @@ if __name__ == "__main__":
         model.learn(total_timesteps=2000000, callback=callback_list, progress_bar=True)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
+        reward_history = pd.read_csv(env.reward_history_filename)
         fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 12))
-        for col, ax in zip(env.reward_history.columns, axes.flatten()):
-            ax.plot(env.reward_history[col])
+        for col, ax in zip(reward_history.columns, axes.flatten()):
+            ax.plot(reward_history[col])
             ax.set_title(f"Reward History - {col}")
             ax.set_xlabel(col) # Set the x-axis label
             ax.set_ylabel('value')
