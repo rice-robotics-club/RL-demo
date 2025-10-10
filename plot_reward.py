@@ -15,6 +15,7 @@ except ValueError:
 
 if latest_file:
     reward_history = pd.read_csv(latest_file)
+    reward_history = reward_history[-10000:]
     fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 12))
     for col, ax in zip(reward_history.columns, axes.flatten()):
         ax.plot(reward_history[col])
