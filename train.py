@@ -14,14 +14,14 @@ import os
 import time
 import math
 import numpy as np
-import pybullet as p
+import pybullet as py
 import pybullet_data
 import gymnasium as gym
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
-
-
+import pandas as pd
+import matplotlib.pyplot as plt
 
 # These are our custom modules: 
 # utils has a bunch of helper functions for importing stuff and navigating local files
@@ -84,7 +84,7 @@ if __name__ == "__main__":
         model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
 
     checkpoint_callback = CheckpointCallback(
-        save_freq=200000,
+        save_freq=100000,
         save_path=save_path,
         name_prefix=save_prefix
     )
@@ -119,6 +119,15 @@ if __name__ == "__main__":
         model.learn(total_timesteps=2000000, callback=callback_list, progress_bar=True)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
+        reward_history = pd.read_csv(env.reward_history_filename)
+        fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 12))
+        for col, ax in zip(reward_history.columns, axes.flatten()):
+            ax.plot(reward_history[col])
+            ax.set_title(f"Reward History - {col}")
+            ax.set_xlabel(col) # Set the x-axis label
+            ax.set_ylabel('value')
+        plt.tight_layout()
+        plt.show()
     finally:
         env.close()
     

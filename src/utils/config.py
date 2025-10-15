@@ -36,7 +36,7 @@ ROBOTS = {
         'SHAKE_PENALTY_WEIGHT': 0.05,
         'SURVIVAL_WEIGHT': 0.001,  # Small constant reward for each step the robot stays upright
         'FALLEN_PENALTY': 20,
-        'FORWARD_VEL_WEIGHT': 100.0,
+        'FORWARD_VEL_WEIGHT': 1.0,
         'ANGULAR_VEL_WEIGHT': 1.0,  # New: reward for turning (yaw angular velocity)
         # New: discourage jumping/high vertical motion.
         'JUMP_PENALTY_WEIGHT': 0.1,     # Penalize excessive vertical velocity

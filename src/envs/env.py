@@ -18,6 +18,9 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 import gymnasium as gym
+import pandas as pd
+import matplotlib.pyplot as plt
+
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -158,6 +161,10 @@ class BaseEnv(gym.Env):
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
 
         self.render_mode = render_mode
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
+        time_now = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        self.reward_history_filename = f"history/reward_history_{time_now}.csv"
+        self.reward_history.to_csv(self.reward_history_filename, index=False)
 
     def initialize_joints(self):
         self.joint_indices = []
@@ -269,6 +276,9 @@ class BaseEnv(gym.Env):
         
         observation = self._get_obs()
         info = self._get_info()
+        if len(self.reward_history) >0:
+            self.reward_history.to_csv(self.reward_history_filename, index=False,mode='a', header=False)
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
         return observation, info
     
     def calculate_step_reward_new(self, action, steps_taken=0):
@@ -304,28 +314,30 @@ class BaseEnv(gym.Env):
         # 2. Angular Velocity Tracking Reward
         r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
         # 3. Height Penalty
-        r_height = -(current_base_pos[2] - target_z)**2
+        r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = np.array([state[0] for state in joint_states])
-        r_pose = -(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
+        r_pose = -0.075*(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
         # 5. Action Rate Penalty
-        r_action_rate = -np.linalg.norm(action-self.previous_action)**2
+        r_action_rate = -0.015*np.linalg.norm(action-self.previous_action)**2
         # 6. Vertical Velocity Penalty
-        r_lin_vel_z = -base_vel[2]**2
+        r_lin_vel_z = -0.2*base_vel[2]**2
         # 7. Roll and Pitch Penalty
         rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
         z_direction = np.array([rot_matrix[6], rot_matrix[7], rot_matrix[8]])
         if not (0.99<np.linalg.norm(z_direction) < 1.01):
             raise ValueError("Z direction vector is not normalized!")
-        r_rp = -(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
+        r_rp = -0.4*(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
         # 8. Survival Reward
         r_survival = (self.SURVIVAL_WEIGHT * 1) if not is_fallen else 0.0
         # 9. Fallen Penalty
         r_fallen = -self.FALLEN_PENALTY if is_fallen else 0.0
 
         ## Calculate total reward:
-        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp + r_survival - r_fallen)
+        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp + r_survival - r_fallen   )
+        new_history = pd.DataFrame({'step_taken':[steps_taken],'lin_vel':[r_lin_vel], 'ang_vel':[r_ang_vel], 'height':[r_height], 'pose':[r_pose], 'action_rate':[r_action_rate], 'lin_vel_z':[r_lin_vel_z], 'rp':[r_rp], 'survival':[r_survival], 'fallen':[r_fallen], 'total':[total_reward]})
+        self.reward_history = pd.concat([self.reward_history,new_history], ignore_index=True)
         return total_reward
     
     def calculate_step_reward(self, action, steps_taken=0):
