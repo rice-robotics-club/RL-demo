@@ -151,8 +151,8 @@ class BaseEnv(gym.Env):
         self.target_speed = target_speed
         self.target_velocity = self.generate_random_target_velocity(target_speed)
 
-        # Generate a random target orientation to start (yaw angle in radians between -pi and pi)
-        self.target_orientation = self.generate_random_orientation_vector()
+        # Generate a random target turn to start (yaw angle in radians between -pi and pi)
+        self.target_turn = self.generate_random_turn_vector()
 
         # Generate an initial momentum vector to start (in the x-y plane, with a 0 component in the z direction)
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
@@ -184,8 +184,8 @@ class BaseEnv(gym.Env):
         # 5. Angular velocity (3),
         # 6. Cosine and Sine of joint angles (2 values per joint)
         # 7. Control Goal Velocity (3 values: x,y,z components)
-        # 8. Control Goal Orientation (3 values: x,y,z components of a unit vector in the desired yaw direction)
-        obs_space_shape = (num_joints * 4) + 13 + 3 + 3
+        # 8. Control Goal Turn (1 value, in positive or negative radians/sec)
+        obs_space_shape = (num_joints * 4) + 13 + 3 + 1
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
@@ -211,13 +211,13 @@ class BaseEnv(gym.Env):
         # Get the goal velocity vector
         target_vel = self.target_velocity
         
-        # Get the goal orientation vector
-        target_orient = self.target_orientation
+        # Get the goal turn vector
+        target_turn = self.target_turn
 
         # Compose the full observation vector and return it
         obs = np.concatenate([
             joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
-            base_vel, base_angular_vel, target_vel, target_orient
+            base_vel, base_angular_vel, target_vel, [target_turn]
         ])
         return obs.astype(np.float32)
 
@@ -229,10 +229,10 @@ class BaseEnv(gym.Env):
         speed = np.random.uniform(target_speed - .25, target_speed + .25)
         return np.array([speed * np.cos(angle), speed * np.sin(angle), 0])
 
-    def generate_random_orientation_vector(self):
-        ''' Generates a random orientation command (yaw angle in radians between -pi and pi) '''
-        theta = np.random.uniform(-np.pi, np.pi)
-        return [math.cos(theta), math.sin(theta), 0]
+    def generate_random_turn_vector(self):
+        ''' Generates a random turn command (yaw angle in radians/sec between -pi/2 and pi/2) '''
+        theta = np.random.uniform(-np.pi/2, np.pi/2)
+        return theta
     
     def generate_random_initial_momentum(self, strength):
         ''' Generates a random initial momentum vector in the x-y plane with a magnitude up to 'strength' '''
@@ -260,29 +260,13 @@ class BaseEnv(gym.Env):
         # New target velocity for this episode
         self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
         # New target orientation for this episode
-        self.target_orientation = self.generate_random_orientation_vector()
+        self.target_turn = self.generate_random_turn_vector()
 
         # New initial momentum for this episode
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=self.INITIAL_MOMENTUM)
         p.resetBaseVelocity(self.robot_id, linearVelocity=self.initial_momentum_vector.tolist(), angularVelocity=[0,0,0])
 
-        # Render in pybullet GUI if enabled as a vector
-        if self.render_mode == 'human':
-            # Draw the robot's current orientation vector
-            rot_matrix = p.getMatrixFromQuaternion(start_orientation)
-            forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
-
-            origin = [start_position[0], start_position[1], start_position[2] + 0.1]
-            orientation_end = [origin[0] + forward_vector[0], origin[1] + forward_vector[1], origin[2] + forward_vector[2]]
-            p.addUserDebugLine(origin, orientation_end, lineColorRGB=[1, 0, 0], lineWidth=3, lifeTime=5)
-
-            # Draw the target velocity vector
-            if self.debug_line_id is not None:
-                p.removeUserDebugItem(self.debug_line_id)
-            target_start = [0, 0, 0.1]
-            target_end = [self.target_velocity[0] * 10, self.target_velocity[1] * 10, 0.1]
-            self.debug_line_id = p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=5, lifeTime=5)
-
+        
         observation = self._get_obs()
         info = self._get_info()
         return observation, info
@@ -309,7 +293,7 @@ class BaseEnv(gym.Env):
         target_vel = self.target_velocity
 
         # velocity commands
-        target_angular_vel = np.array([0,0,0])
+        target_angular_vel = self.target_turn * np.array([0,0,1])  # Yaw only
         target_z = self.start_position[2]
 
         is_fallen = current_base_pos[2] < 0.05
@@ -318,7 +302,7 @@ class BaseEnv(gym.Env):
         # 1. Linear Velocity Tracking Reward
         r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
         # 2. Angular Velocity Tracking Reward
-        r_ang_vel = np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
         # 3. Height Penalty
         r_height = -(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
@@ -339,11 +323,11 @@ class BaseEnv(gym.Env):
         r_survival = (self.SURVIVAL_WEIGHT * 1) if not is_fallen else 0.0
         # 9. Fallen Penalty
         r_fallen = -self.FALLEN_PENALTY if is_fallen else 0.0
-        # Orientation Reward (needs to be written to be a relative turn command rather than a fixed vector, but i will implement later)
 
         ## Calculate total reward:
-        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp + r_survival    )
+        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp + r_survival - r_fallen)
         return total_reward
+    
     def calculate_step_reward(self, action, steps_taken=0):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
@@ -360,16 +344,16 @@ class BaseEnv(gym.Env):
         # We also want to define a 'home' position for each joint (probably in the __init__ method) 
         # and punish actions that move too far away from it. This will keep the robot more stable.
 
-        # Get position, orientation, velocity
+        # Get position, turn, velocity
         current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
         local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
         forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
 
-        # Get the target velocity and orientation vectors
+        # Get the target velocity and turn vectors
         target_vel = self.target_velocity
-        target_orient = self.target_orientation
+        target_turn = self.target_turn
 
         ## Reward Components: ##
         # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity

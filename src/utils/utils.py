@@ -16,6 +16,7 @@ def load_all_params(robot_name):
         'SURVIVAL_WEIGHT',
         'FALLEN_PENALTY',
         'FORWARD_VEL_WEIGHT',
+        'ANGULAR_VEL_WEIGHT',
         'JUMP_PENALTY_WEIGHT',
         'HIGH_ALTITUDE_PENALTY_WEIGHT',
         'HOME_POSITION_PENALTY_WEIGHT',

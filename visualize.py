@@ -23,10 +23,10 @@ class VisualizationEnv(BaseEnv):
         # Set up a interactive debug variable for pybullet to control: 
         #   - target velocity direction (0 to 1 times 2pi)
         #   - target velocity magnitude (0 to 1)
-        #   - Target orientation (0 to 1 times 2pi)
+        #   - Target turn (-1 to 1 times pi/2 radians/sec)
         self.target_velocity_direction_id = p.addUserDebugParameter("Target Velocity Direction", 0, 1, 0)
         self.target_velocity_magnitude_id = p.addUserDebugParameter("Target Velocity Magnitude", 0, 1, 0)
-        self.target_orientation_id = p.addUserDebugParameter("Target Orientation", 0, 1, 0)
+        self.target_turn_id = p.addUserDebugParameter("Target Turn", -1, 1, 0)
 
         # Initialize debug object lines to be drawn on for visualization of orientation/velocity
         self.debug_lines = []
@@ -41,13 +41,13 @@ class VisualizationEnv(BaseEnv):
         try:
             direction = p.readUserDebugParameter(self.target_velocity_direction_id) * 2 * 3.14159
             magnitude = p.readUserDebugParameter(self.target_velocity_magnitude_id)
-            target_orientation_angle = p.readUserDebugParameter(self.target_orientation_id) * 2 * 3.14159
+            target_turn = p.readUserDebugParameter(self.target_turn_id) * 3.14159 / 2
             
             # Set target velocity from sliders
             self.target_velocity = [magnitude * self.target_speed * np.cos(direction), 
                                    magnitude * self.target_speed * np.sin(direction), 0]
-            # Set target orientation from slider (as quaternion)
-            self.target_orientation = [0, 0, np.sin(target_orientation_angle / 2), np.cos(target_orientation_angle / 2)]
+            # Set target turn from slider (as scalar)
+            self.target_turn = target_turn
         except Exception as e:
             print(f"Warning: Could not read debug sliders in reset: {e}")
             # Keep the random values from parent reset
@@ -55,7 +55,7 @@ class VisualizationEnv(BaseEnv):
         return obs, info
 
     def step(self, action):
-        # Read the debug parameters and set the target velocity and orientation accordingly
+        # Read the debug parameters and set the target velocity and turn accordingly
         try:
             direction = p.readUserDebugParameter(self.target_velocity_direction_id) * 2 * 3.14159  # 0 to 2pi
         except Exception as e:
@@ -67,29 +67,29 @@ class VisualizationEnv(BaseEnv):
             print(f"Error reading user debug parameter: {e}")
             magnitude = 0  # Default to 0 if there's an error
         try:
-            target_orientation = p.readUserDebugParameter(self.target_orientation_id) * 2 * 3.14159  # 0 to 2pi
+            target_turn = p.readUserDebugParameter(self.target_turn_id) * 3.14159 / 2  # -pi/2 to pi/2
         except Exception as e:
             print(f"Error reading user debug parameter: {e}")
-            target_orientation = 0  # Default to 0 if there's an error
+            target_turn = 0  # Default to 0 if there's an error
 
         # Convert target velocity into 3d vector
         self.target_velocity = [magnitude * self.target_speed * np.cos(direction), magnitude * self.target_speed * np.sin(direction), 0]
-        # Convert target orientation to quaternion [x, y, z, w]
-        self.target_orientation = [0, 0, np.sin(target_orientation / 2), np.cos(target_orientation / 2)]
+        # Convert target turn to scalar
+        self.target_turn = target_turn
         
         # Debug: Print occasionally to verify values (every 100 steps)
         if self.steps_taken % 100 == 0:
             # Get current velocity and orientation for comparison
             current_vel, _ = p.getBaseVelocity(self.robot_id)
             current_pos, current_quat = p.getBasePositionAndOrientation(self.robot_id)
-            current_yaw = p.getEulerFromQuaternion(current_quat)[2]
-            target_yaw = target_orientation
+            current_euler = p.getEulerFromQuaternion(current_quat)
+            current_yaw = current_euler[2]  # z-axis rotation (yaw)
             
             # Calculate velocity magnitude error
             vel_error = np.linalg.norm(np.array(current_vel[:2]) - np.array(self.target_velocity[:2]))
             
             # Calculate orientation (which way robot is facing) error
-            yaw_error = abs(current_yaw - target_yaw)
+            yaw_error = abs(current_yaw - target_turn)
             if yaw_error > np.pi:
                 yaw_error = 2*np.pi - yaw_error
             
@@ -101,7 +101,7 @@ class VisualizationEnv(BaseEnv):
                 vel_direction_error = 2*np.pi - vel_direction_error
             
             print(f"Step {self.steps_taken}:")
-            print(f"  Target: vel=[{self.target_velocity[0]:.3f}, {self.target_velocity[1]:.3f}] ({target_vel_angle:.2f} rad), face={target_orientation:.2f} rad")
+            print(f"  Target: vel=[{self.target_velocity[0]:.3f}, {self.target_velocity[1]:.3f}] ({target_vel_angle:.2f} rad)")
             print(f"  Current: vel=[{current_vel[0]:.3f}, {current_vel[1]:.3f}] ({current_vel_angle:.2f} rad), face={current_yaw:.2f} rad")
             print(f"  Error: vel_mag={vel_error:.3f} m/s, vel_dir={vel_direction_error:.3f} rad, face_dir={yaw_error:.3f} rad")
 
@@ -122,15 +122,6 @@ class VisualizationEnv(BaseEnv):
         line_id = p.addUserDebugLine(start_pos, end_pos, [1, 0, 0], 3)  # Red line (thicker)
         self.debug_lines.append(line_id)
         
-        # Draw a line indicating the target orientation direction (use the angle from the slider directly)
-        # Fixed length for orientation (not scaled by velocity)
-        orient_length = 0.5  # Fixed length in meters
-        orient_end_pos = [start_pos[0] + orient_length * np.cos(target_orientation), 
-                         start_pos[1] + orient_length * np.sin(target_orientation), 
-                         start_pos[2]]
-        orient_line_id = p.addUserDebugLine(start_pos, orient_end_pos, [0, 1, 0], 3)  # Green line (thicker)
-        self.debug_lines.append(orient_line_id)
-
         # Get current velocity and orientation of the bot
         current_linear_vel, current_angular_vel = p.getBaseVelocity(self.robot_id)
         current_pos, current_orientation_quat = p.getBasePositionAndOrientation(self.robot_id)
@@ -142,15 +133,21 @@ class VisualizationEnv(BaseEnv):
         current_vel_line_id = p.addUserDebugLine(current_pos, current_vel_end_pos, [0.5, 0, 0], 3)  # Dark red line
         self.debug_lines.append(current_vel_line_id)
         
-        # Draw current orientation vector (dark green: [0, 0.5, 0])
-        # Extract yaw angle from quaternion
-        current_euler = p.getEulerFromQuaternion(current_orientation_quat)
-        current_yaw = current_euler[2]  # z-axis rotation (yaw)
-        current_orient_end_pos = [current_pos[0] + orient_length * np.cos(current_yaw),
-                                  current_pos[1] + orient_length * np.sin(current_yaw),
-                                  current_pos[2]]
-        current_orient_line_id = p.addUserDebugLine(current_pos, current_orient_end_pos, [0, 0.5, 0], 3)  # Dark green line
-        self.debug_lines.append(current_orient_line_id)
+        # Draw current angular velocity vector (dark green: [0, 0.5, 0])
+        angular_velocity_scale = 0.5  # Scale down angular velocity for visibility
+        current_angular_vel_end_pos = [current_pos[0] + current_angular_vel[0] * angular_velocity_scale,
+                                       current_pos[1] + current_angular_vel[1] * angular_velocity_scale,
+                                       current_pos[2] + current_angular_vel[2] * angular_velocity_scale]
+        current_angular_vel_line_id = p.addUserDebugLine(current_pos, current_angular_vel_end_pos, [0, 0.5, 0], 3)  # Dark green line
+        self.debug_lines.append(current_angular_vel_line_id)
+
+        # Draw a line indicating the target turn direction (green line)
+        turn_line_length = 0.5  # Fixed length for turn direction line
+        turn_end_pos = [start_pos[0] + turn_line_length * np.cos(self.target_turn), 
+                        start_pos[1] + turn_line_length * np.sin(self.target_turn), 
+                        start_pos[2]]
+        turn_line_id = p.addUserDebugLine(start_pos, turn_end_pos, [0, 1, 0], 1)  # Green line
+        self.debug_lines.append(turn_line_id)
 
         return super().step(action)
 
@@ -193,13 +190,13 @@ if __name__ == "__main__":
     print("Controls:")
     print("  - Target Velocity Direction: 0=Right, 0.25=Up, 0.5=Left, 0.75=Down")
     print("  - Target Velocity Magnitude: 0=Stopped, 1=Full speed")
-    print("  - Target Orientation: 0=Right, 0.25=Up, 0.5=Left, 0.75=Down")
+    print("  - Target Turn speed: -pi/2 to +pi/2 radians/sec")
     print()
     print("Visualization:")
     print("  - Light RED line: Target velocity")
-    print("  - Light GREEN line: Target orientation")
+    print("  - Light GREEN line: Target turn speed")
     print("  - Dark RED line: Current velocity")
-    print("  - Dark GREEN line: Current orientation")
+    print("  - Dark GREEN line: Current turn speed")
     print("=" * 80)
     
     obs, info = env.reset()
@@ -215,11 +212,11 @@ if __name__ == "__main__":
             try:
                 direction = p.readUserDebugParameter(env.target_velocity_direction_id) * 2 * 3.14159
                 magnitude = p.readUserDebugParameter(env.target_velocity_magnitude_id)
-                target_orientation_angle = p.readUserDebugParameter(env.target_orientation_id) * 2 * 3.14159
+                target_turn = p.readUserDebugParameter(env.target_turn_id) * 3.14159 / 2
                 
                 env.target_velocity = [magnitude * env.target_speed * np.cos(direction), 
                                       magnitude * env.target_speed * np.sin(direction), 0]
-                env.target_orientation = [np.cos(target_orientation_angle), np.sin(target_orientation_angle), 0]
+                env.target_turn = target_turn
             except:
                 pass  # If reading fails, keep current targets
             

@@ -44,7 +44,7 @@ if __name__ == "__main__":
     # Pass box parameters into the environment.
     min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
-        render_mode=render_mode, 
+        render_mode="headless", 
         urdf_filename=urdf_file, 
         start_position=[0, 0, -min_z],
         target_speed = .5,
