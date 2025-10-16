@@ -37,8 +37,8 @@ Ideal Structure:
             ______________           _____________      __________________ 
                 train.py  |         | visualize.py |    |    test.py     |
            ----------------          --------|------    ----------------
-                     \ _________________     |     ____________/
-                                        \ ______ /
+                    | _________________     |     ____________/
+                                        | ______ /
                                         | env.py |
                                          --------
  
@@ -315,7 +315,7 @@ class BaseEnv(gym.Env):
 
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward
-        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-(np.linalg.norm(np.array(base_vel) - np.array(target_vel)))/.1 * np.linalg.norm(np.array(target_vel)))
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-(np.linalg.norm(np.array(base_vel) - np.array(target_vel)))/.01 * np.linalg.norm(np.array(target_vel)))
         ### DEBUG: ### 
         #print("="*20)
         #print("VELOCITY DEBUGGING")
@@ -327,7 +327,7 @@ class BaseEnv(gym.Env):
         #print("REWARD: ",r_lin_vel)
         #print("="*20)
         # 2. Angular Velocity Tracking Reward
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp((-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2) / .1*np.linalg.norm(np.array(target_vel)))
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp((-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2) /.01 *np.linalg.norm(np.array(target_vel)))
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
