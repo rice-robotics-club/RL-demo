@@ -161,7 +161,7 @@ class BaseEnv(gym.Env):
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
 
         self.render_mode = render_mode
-        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'survival':[], 'fallen':[], 'total':[]})
         time_now = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
         self.reward_history_filename = f"history/reward_history_{time_now}.csv"
         self.reward_history.to_csv(self.reward_history_filename, index=False)
@@ -278,7 +278,7 @@ class BaseEnv(gym.Env):
         info = self._get_info()
         if len(self.reward_history) >0:
             self.reward_history.to_csv(self.reward_history_filename, index=False,mode='a', header=False)
-        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'total':[]})
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'survival':[], 'fallen':[], 'total':[]})
         return observation, info
     
     def calculate_step_reward_new(self, action, steps_taken=0):
@@ -290,7 +290,7 @@ class BaseEnv(gym.Env):
         # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
         # We should get that and use it to calculate a reward for movement in the target direction. 
         # There is no 'target box' in this setup - instead it's just trying to follow a velocity vector.
-       
+
         # This target velocity should be fairly small (0.5 m/s?) to start with - 
         # perhaps we can increase the speed as the training progresses?
 
@@ -308,11 +308,26 @@ class BaseEnv(gym.Env):
 
         is_fallen = current_base_pos[2] < 0.05
 
+        # UPDATE 10/16/25: Reward logic now divided by taget velocity magnitude * .1 
+        # in order to make the 'bell' shape of the reward function steeper. 
+        # Previously the robot could still achieve <95% of the movement rewards without 
+        # moving at all in most target velocity ranges, which is not what we want.
+
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward
-        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-(np.linalg.norm(np.array(base_vel) - np.array(target_vel)))/.1 * np.linalg.norm(np.array(target_vel)))
+        ### DEBUG: ### 
+        #print("="*20)
+        #print("VELOCITY DEBUGGING")
+        #print("CURRENT VELOCITY:", base_vel)
+        #print("TARGET VELOCITY: ", target_vel)
+        #print("DIFFERENCE: ", np.array(base_vel) - np.array(target_vel))
+        #print("NORM: ", -np.linalg.norm(np.array(base_vel) - np.array(target_vel)))
+        #print("NORM^2:", -np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        #print("REWARD: ",r_lin_vel)
+        #print("="*20)
         # 2. Angular Velocity Tracking Reward
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp((-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2) / .1*np.linalg.norm(np.array(target_vel)))
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty

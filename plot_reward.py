@@ -16,11 +16,11 @@ except ValueError:
 if latest_file:
     reward_history = pd.read_csv(latest_file)
     reward_history = reward_history[-10000:]
-    fig, axes = plt.subplots(nrows=3, ncols=3, figsize=(10, 12))
+    fig, axes = plt.subplots(nrows=3, ncols=4, figsize=(10, 12))
     for col, ax in zip(reward_history.columns, axes.flatten()):
         ax.plot(reward_history[col])
         ax.set_title(f"Reward History - {col}")
-        ax.set_xlabel(col) # Set the x-axis label
-        ax.set_ylabel('value')
+        ax.set_xlabel('time') # Set the x-axis label
+        ax.set_ylabel(col)
     plt.tight_layout()
     plt.show()
