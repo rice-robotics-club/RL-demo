@@ -1,7 +1,8 @@
 .venv
 .vscode
 __pycache__
-models
+models/servobot_checkpoints/current
+models/quadruped_checkpoints/current
 history
 .conda
 .idea

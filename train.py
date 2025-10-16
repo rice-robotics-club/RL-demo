@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     checkpoint_callback = CheckpointCallback(
         save_freq=100000,
-        save_path=save_path,
+        save_path=os.path.join(save_path, "/current"),
         name_prefix=save_prefix
     )
     
