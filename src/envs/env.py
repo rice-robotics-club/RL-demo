@@ -91,7 +91,7 @@ class BaseEnv(gym.Env):
                  render_mode=None, 
                  urdf_filename="simple_quadruped.urdf", 
                  start_position=[0, 0, 1],
-                 target_speed = .5,):
+                 target_speed = 1,):
         super(BaseEnv, self).__init__()
         '''
         This class implements the custom Gym environment for our robot RL training!
@@ -113,6 +113,8 @@ class BaseEnv(gym.Env):
         self.action_force_limit = 50
         
         self.action_skip = 10
+
+        self.rolling_avg_speed = np.array([0.0, 0.0, 0.0])
 
         params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
@@ -265,7 +267,10 @@ class BaseEnv(gym.Env):
 
 
         # New target velocity for this episode
-        self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
+        # self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
+        # Use a fixed target velocity for now to simplify training
+        self.target_velocity = np.array([self.target_speed, 0, 0])
+
         # New target orientation for this episode
         self.target_turn = self.generate_random_turn_vector()
 
@@ -300,6 +305,7 @@ class BaseEnv(gym.Env):
         # Get position, orientation, velocity
         current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        self.rolling_avg_speed = 0.9*self.rolling_avg_speed + 0.1*np.array(base_vel)
         target_vel = self.target_velocity
 
         # velocity commands
@@ -315,7 +321,7 @@ class BaseEnv(gym.Env):
 
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward
-        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-(np.linalg.norm(np.array(base_vel) - np.array(target_vel)))/.01 * np.linalg.norm(np.array(target_vel)))
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2)
         ### DEBUG: ### 
         #print("="*20)
         #print("VELOCITY DEBUGGING")
@@ -327,7 +333,7 @@ class BaseEnv(gym.Env):
         #print("REWARD: ",r_lin_vel)
         #print("="*20)
         # 2. Angular Velocity Tracking Reward
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp((-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2) /.01 *np.linalg.norm(np.array(target_vel)))
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2))
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty

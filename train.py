@@ -44,10 +44,10 @@ if __name__ == "__main__":
     # Pass box parameters into the environment.
     min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
-        render_mode="headless", 
+        render_mode=render_mode, 
         urdf_filename=urdf_file, 
         start_position=[0, 0, -min_z],
-        target_speed = .5,
+        target_speed = 1,
     )
     use_existing_model = input("Use existing model if available? (y/n): ").strip().lower() == 'y'
     if use_existing_model:
@@ -91,14 +91,16 @@ if __name__ == "__main__":
     
     # Add live plotting callback (different behavior for GUI vs headless)
     if render_mode == 'human':
-        # With GUI: Show live updating plots
-        plot_callback = LivePlottingCallback(
-            plot_freq=2048,  # Update every iteration (n_steps)
-            max_points=500,  # Keep last 500 data points for performance
-            verbose=1
-        )
-        print("\n Live plotting enabled! A plot window will open showing real-time metrics.")
-        print("   The plot updates every 2048 steps (~7 seconds at 290 fps)")
+        # # Disable live plotting to avoid crashes
+        # # With GUI: Show live updating plots
+        # plot_callback = LivePlottingCallback(
+        #     plot_freq=2048,  # Update every iteration (n_steps)
+        #     max_points=500,  # Keep last 500 data points for performance
+        #     verbose=1
+        # )
+        # print("\n Live plotting enabled! A plot window will open showing real-time metrics.")
+        # print("   The plot updates every 2048 steps (~7 seconds at 290 fps)")
+        pass
     else:
         # Headless: Save plots periodically to files
         plot_callback = LivePlottingCallbackNoGUI(
@@ -116,7 +118,7 @@ if __name__ == "__main__":
 
     try:
 
-        model.learn(total_timesteps=2000000, callback=callback_list, progress_bar=True)  # This task may require longer training
+        model.learn(total_timesteps=1000000, callback=callback_list, progress_bar=True)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
         reward_history = pd.read_csv(env.reward_history_filename)
