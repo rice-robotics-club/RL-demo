@@ -18,6 +18,9 @@ import numpy as np
 import pybullet as p
 import pybullet_data
 import gymnasium as gym
+import pandas as pd
+import matplotlib.pyplot as plt
+
 from gymnasium import spaces
 from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback
@@ -34,8 +37,8 @@ Ideal Structure:
             ______________           _____________      __________________ 
                 train.py  |         | visualize.py |    |    test.py     |
            ----------------          --------|------    ----------------
-                     \ _________________     |     ____________/
-                                        \ ______ /
+                    | _________________     |     ____________/
+                                        | ______ /
                                         | env.py |
                                          --------
  
@@ -88,7 +91,7 @@ class BaseEnv(gym.Env):
                  render_mode=None, 
                  urdf_filename="simple_quadruped.urdf", 
                  start_position=[0, 0, 1],
-                 target_speed = .5,):
+                 target_speed = 1,):
         super(BaseEnv, self).__init__()
         '''
         This class implements the custom Gym environment for our robot RL training!
@@ -110,6 +113,8 @@ class BaseEnv(gym.Env):
         self.action_force_limit = 50
         
         self.action_skip = 10
+
+        self.rolling_avg_speed = np.array([0.0, 0.0, 0.0])
 
         params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
@@ -139,24 +144,29 @@ class BaseEnv(gym.Env):
 
         # Define some stable 'home' position array for each joint (straight down, angle of 0)
         self.home_position = [0 for _ in self.joint_indices]
-        ik = IK()
-        idle_cfg = ik.get_idle_cfg(height=0.18)
-        self.home_position = [0]*len(self.joint_indices)
-        for i in self.joint_indices:
-            self.home_position[i] = idle_cfg[self.get_joint_name[i]]
+        if 'servobot' in urdf_filename:
+            ik = IK()
+            idle_cfg = ik.get_idle_cfg(height=0.18)
+            self.home_position = [0]*len(self.joint_indices)
+            for i in self.joint_indices:
+                self.home_position[i] = idle_cfg[self.get_joint_name[i]]
         self.previous_action = np.zeros(self.action_space.shape)
 
         # Generate a random target velocity to start (in the x-y plane, with a 0 component in the z direction)
         self.target_speed = target_speed
         self.target_velocity = self.generate_random_target_velocity(target_speed)
 
-        # Generate a random target orientation to start (yaw angle in radians between -pi and pi)
-        self.target_orientation = self.generate_random_orientation_vector()
+        # Generate a random target turn to start (yaw angle in radians between -pi and pi)
+        self.target_turn = self.generate_random_turn_vector()
 
         # Generate an initial momentum vector to start (in the x-y plane, with a 0 component in the z direction)
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=0.0)
 
         self.render_mode = render_mode
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'survival':[], 'fallen':[], 'total':[]})
+        time_now = pd.Timestamp.now().strftime("%Y%m%d_%H%M%S")
+        self.reward_history_filename = f"history/reward_history_{time_now}.csv"
+        self.reward_history.to_csv(self.reward_history_filename, index=False)
 
     def initialize_joints(self):
         self.joint_indices = []
@@ -183,8 +193,8 @@ class BaseEnv(gym.Env):
         # 5. Angular velocity (3),
         # 6. Cosine and Sine of joint angles (2 values per joint)
         # 7. Control Goal Velocity (3 values: x,y,z components)
-        # 8. Control Goal Orientation (3 values: x,y,z components of a unit vector in the desired yaw direction)
-        obs_space_shape = (num_joints * 4) + 13 + 3 + 3
+        # 8. Control Goal Turn (1 value, in positive or negative radians/sec)
+        obs_space_shape = (num_joints * 4) + 13 + 3 + 1
         self.observation_space = spaces.Box(low=-np.inf, high=np.inf, shape=(obs_space_shape,), dtype=np.float32)
 
     def _get_obs(self):
@@ -210,13 +220,13 @@ class BaseEnv(gym.Env):
         # Get the goal velocity vector
         target_vel = self.target_velocity
         
-        # Get the goal orientation vector
-        target_orient = self.target_orientation
+        # Get the goal turn vector
+        target_turn = self.target_turn
 
         # Compose the full observation vector and return it
         obs = np.concatenate([
             joint_positions, joint_velocities, joint_cos, joint_sin, base_pos, base_orient,
-            base_vel, base_angular_vel, target_vel, target_orient
+            base_vel, base_angular_vel, target_vel, [target_turn]
         ])
         return obs.astype(np.float32)
 
@@ -228,10 +238,10 @@ class BaseEnv(gym.Env):
         speed = np.random.uniform(target_speed - .25, target_speed + .25)
         return np.array([speed * np.cos(angle), speed * np.sin(angle), 0])
 
-    def generate_random_orientation_vector(self):
-        ''' Generates a random orientation command (yaw angle in radians between -pi and pi) '''
-        theta = np.random.uniform(-np.pi, np.pi)
-        return [math.cos(theta), math.sin(theta), 0]
+    def generate_random_turn_vector(self):
+        ''' Generates a random turn command (yaw angle in radians/sec between -pi/2 and pi/2) '''
+        theta = np.random.uniform(-np.pi/2, np.pi/2)
+        return theta
     
     def generate_random_initial_momentum(self, strength):
         ''' Generates a random initial momentum vector in the x-y plane with a magnitude up to 'strength' '''
@@ -257,33 +267,23 @@ class BaseEnv(gym.Env):
 
 
         # New target velocity for this episode
-        self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
+        # self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
+        # Use a fixed target velocity for now to simplify training
+        self.target_velocity = np.array([self.target_speed, 0, 0])
+
         # New target orientation for this episode
-        self.target_orientation = self.generate_random_orientation_vector()
+        self.target_turn = self.generate_random_turn_vector()
 
         # New initial momentum for this episode
         self.initial_momentum_vector = self.generate_random_initial_momentum(strength=self.INITIAL_MOMENTUM)
         p.resetBaseVelocity(self.robot_id, linearVelocity=self.initial_momentum_vector.tolist(), angularVelocity=[0,0,0])
 
-        # Render in pybullet GUI if enabled as a vector
-        if self.render_mode == 'human':
-            # Draw the robot's current orientation vector
-            rot_matrix = p.getMatrixFromQuaternion(start_orientation)
-            forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
-
-            origin = [start_position[0], start_position[1], start_position[2] + 0.1]
-            orientation_end = [origin[0] + forward_vector[0], origin[1] + forward_vector[1], origin[2] + forward_vector[2]]
-            p.addUserDebugLine(origin, orientation_end, lineColorRGB=[1, 0, 0], lineWidth=3, lifeTime=5)
-
-            # Draw the target velocity vector
-            if self.debug_line_id is not None:
-                p.removeUserDebugItem(self.debug_line_id)
-            target_start = [0, 0, 0.1]
-            target_end = [self.target_velocity[0] * 10, self.target_velocity[1] * 10, 0.1]
-            self.debug_line_id = p.addUserDebugLine(target_start, target_end, lineColorRGB=[0, .5, .75], lineWidth=5, lifeTime=5)
-
+        
         observation = self._get_obs()
         info = self._get_info()
+        if len(self.reward_history) >0:
+            self.reward_history.to_csv(self.reward_history_filename, index=False,mode='a', header=False)
+        self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'survival':[], 'fallen':[], 'total':[]})
         return observation, info
     
     def calculate_step_reward_new(self, action, steps_taken=0):
@@ -295,7 +295,7 @@ class BaseEnv(gym.Env):
         # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
         # We should get that and use it to calculate a reward for movement in the target direction. 
         # There is no 'target box' in this setup - instead it's just trying to follow a velocity vector.
-       
+
         # This target velocity should be fairly small (0.5 m/s?) to start with - 
         # perhaps we can increase the speed as the training progresses?
 
@@ -305,37 +305,62 @@ class BaseEnv(gym.Env):
         # Get position, orientation, velocity
         current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
+        self.rolling_avg_speed = 0.9*self.rolling_avg_speed + 0.1*np.array(base_vel)
         target_vel = self.target_velocity
 
         # velocity commands
-        target_angular_vel = np.array([0,0,0])
+        target_angular_vel = self.target_turn * np.array([0,0,1])  # Yaw only
         target_z = self.start_position[2]
+
+        is_fallen = current_base_pos[2] < 0.05
+
+        # UPDATE 10/16/25: Reward logic now divided by taget velocity magnitude * .1 
+        # in order to make the 'bell' shape of the reward function steeper. 
+        # Previously the robot could still achieve <95% of the movement rewards without 
+        # moving at all in most target velocity ranges, which is not what we want.
 
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward
-        r_lin_vel = np.exp(-np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2)
+        ### DEBUG: ### 
+        #print("="*20)
+        #print("VELOCITY DEBUGGING")
+        #print("CURRENT VELOCITY:", base_vel)
+        #print("TARGET VELOCITY: ", target_vel)
+        #print("DIFFERENCE: ", np.array(base_vel) - np.array(target_vel))
+        #print("NORM: ", -np.linalg.norm(np.array(base_vel) - np.array(target_vel)))
+        #print("NORM^2:", -np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
+        #print("REWARD: ",r_lin_vel)
+        #print("="*20)
         # 2. Angular Velocity Tracking Reward
-        r_ang_vel = np.exp(-np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2 )
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2))
         # 3. Height Penalty
-        r_height = -(current_base_pos[2] - target_z)**2
+        r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
         joint_states = p.getJointStates(self.robot_id, self.joint_indices)
         joint_positions = np.array([state[0] for state in joint_states])
-        r_pose = -(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
+        r_pose = -0.075*(np.linalg.norm(joint_positions - np.array(self.home_position))**2)
         # 5. Action Rate Penalty
-        r_action_rate = -np.linalg.norm(action-self.previous_action)**2
+        r_action_rate = -0.015*np.linalg.norm(action-self.previous_action)**2
         # 6. Vertical Velocity Penalty
-        r_lin_vel_z = -base_vel[2]**2
+        r_lin_vel_z = -0.2*base_vel[2]**2
         # 7. Roll and Pitch Penalty
         rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
         z_direction = np.array([rot_matrix[6], rot_matrix[7], rot_matrix[8]])
         if not (0.99<np.linalg.norm(z_direction) < 1.01):
             raise ValueError("Z direction vector is not normalized!")
-        r_rp = -(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
+        r_rp = -0.4*(1 - z_direction[2])  # Not the same as the penalty described in the blog, but approximately the same when the robot is almost upright.
+        # 8. Survival Reward
+        r_survival = (self.SURVIVAL_WEIGHT * 1) if not is_fallen else 0.0
+        # 9. Fallen Penalty
+        r_fallen = -self.FALLEN_PENALTY if is_fallen else 0.0
 
         ## Calculate total reward:
-        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp)
+        total_reward = (r_lin_vel+r_ang_vel+ r_height + r_pose + r_action_rate + r_lin_vel_z + r_rp + r_survival - r_fallen   )
+        new_history = pd.DataFrame({'step_taken':[steps_taken],'lin_vel':[r_lin_vel], 'ang_vel':[r_ang_vel], 'height':[r_height], 'pose':[r_pose], 'action_rate':[r_action_rate], 'lin_vel_z':[r_lin_vel_z], 'rp':[r_rp], 'survival':[r_survival], 'fallen':[r_fallen], 'total':[total_reward]})
+        self.reward_history = pd.concat([self.reward_history,new_history], ignore_index=True)
         return total_reward
+    
     def calculate_step_reward(self, action, steps_taken=0):
         ''' 
         This function is run for each physics step to calculate the reward earned by the robot during that step.
@@ -352,16 +377,16 @@ class BaseEnv(gym.Env):
         # We also want to define a 'home' position for each joint (probably in the __init__ method) 
         # and punish actions that move too far away from it. This will keep the robot more stable.
 
-        # Get position, orientation, velocity
+        # Get position, turn, velocity
         current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
         base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
         rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
         local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
         forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
 
-        # Get the target velocity and orientation vectors
+        # Get the target velocity and turn vectors
         target_vel = self.target_velocity
-        target_orient = self.target_orientation
+        target_turn = self.target_turn
 
         ## Reward Components: ##
         # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity
