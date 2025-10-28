@@ -115,6 +115,7 @@ class BaseEnv(gym.Env):
         self.action_skip = 10
 
         self.rolling_avg_speed = np.array([0.0, 0.0, 0.0])
+        self.rolling_avg_turn = np.array([0.0, 0.0, 0.0])
 
         params = utils.load_all_params(robot_name=os.path.splitext(os.path.basename(urdf_filename))[0])
         for param, value in params.items():
@@ -267,9 +268,9 @@ class BaseEnv(gym.Env):
 
 
         # New target velocity for this episode
-        # self.target_velocity = self.generate_random_target_velocity(self.TARGET_SPEED)
-        # Use a fixed target velocity for now to simplify training
-        self.target_velocity = np.array([self.target_speed, 0, 0])
+        self.target_velocity = self.generate_random_target_velocity(self.target_speed)
+        # Now that training is working, back to randomly generated target velocity
+        # self.target_velocity = np.array([self.target_speed, 0, 0])
 
         # New target orientation for this episode
         self.target_turn = self.generate_random_turn_vector()
@@ -308,11 +309,14 @@ class BaseEnv(gym.Env):
         self.rolling_avg_speed = 0.9*self.rolling_avg_speed + 0.1*np.array(base_vel)
         target_vel = self.target_velocity
 
-        # velocity commands
+        # turn commands
         target_angular_vel = self.target_turn * np.array([0,0,1])  # Yaw only
         target_z = self.start_position[2]
 
+        self.rolling_avg_turn = 0.9*self.rolling_avg_turn + 0.1*np.array(base_angular_vel)
+
         is_fallen = current_base_pos[2] < 0.05
+
 
         # UPDATE 10/16/25: Reward logic now divided by taget velocity magnitude * .1 
         # in order to make the 'bell' shape of the reward function steeper. 
@@ -321,14 +325,14 @@ class BaseEnv(gym.Env):
 
         # New: tie the default reward value to some constant that effectively punishes 
         # the robot for moving in the wrong direction so it's less likely to do random shit when we don't ask it to.
-        default_reward = -0.1
+        default_reward = -0.25
         # this should be between -0.5 and 0
 
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward (negative when the robot is not moving as desired)
         r_lin_vel = self.FORWARD_VEL_WEIGHT * (np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2) + default_reward)
         # 2. Angular Velocity Tracking Reward (Negative when the robot is moving when it's not supposed to be)
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * (np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2)) + default_reward)
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * (np.exp(-0.01*(np.linalg.norm(np.array(self.rolling_avg_turn) - np.array(target_angular_vel))**2)) + default_reward)
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty

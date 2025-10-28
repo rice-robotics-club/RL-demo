@@ -24,7 +24,6 @@ def load_all_params(robot_name):
         'ORIENTATION_REWARD_WEIGHT',
         'ACTION_LIMIT',
         'INITIAL_MOMENTUM',
-        'TARGET_SPEED',
         
     ]
     params = {}
