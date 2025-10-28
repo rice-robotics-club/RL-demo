@@ -286,7 +286,7 @@ class BaseEnv(gym.Env):
         self.reward_history = pd.DataFrame({'step_taken':[],'lin_vel':[], 'ang_vel':[], 'height':[], 'pose':[], 'action_rate':[], 'lin_vel_z':[], 'rp':[],'survival':[], 'fallen':[], 'total':[]})
         return observation, info
     
-    def calculate_step_reward_new(self, action, steps_taken=0):
+    def calculate_step_reward(self, action, steps_taken=0):
         ''' 
         This function implements the reward function described in https://federicosarrocco.com/blog/Making-Quadrupeds-Learning-To-Walk
         '''
@@ -320,20 +320,10 @@ class BaseEnv(gym.Env):
         # moving at all in most target velocity ranges, which is not what we want.
 
         ## Reward Components: ##
-        # 1. Linear Velocity Tracking Reward
-        r_lin_vel = self.FORWARD_VEL_WEIGHT * np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2)
-        ### DEBUG: ### 
-        #print("="*20)
-        #print("VELOCITY DEBUGGING")
-        #print("CURRENT VELOCITY:", base_vel)
-        #print("TARGET VELOCITY: ", target_vel)
-        #print("DIFFERENCE: ", np.array(base_vel) - np.array(target_vel))
-        #print("NORM: ", -np.linalg.norm(np.array(base_vel) - np.array(target_vel)))
-        #print("NORM^2:", -np.linalg.norm(np.array(base_vel) - np.array(target_vel))**2)
-        #print("REWARD: ",r_lin_vel)
-        #print("="*20)
-        # 2. Angular Velocity Tracking Reward
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2))
+        # 1. Linear Velocity Tracking Reward (negative when the robot is not moving as desired)
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * (np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2) - .5)
+        # 2. Angular Velocity Tracking Reward (Negative when the robot is moving when it's not supposed to be)
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * (np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2)) - .5)
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
@@ -360,92 +350,7 @@ class BaseEnv(gym.Env):
         new_history = pd.DataFrame({'step_taken':[steps_taken],'lin_vel':[r_lin_vel], 'ang_vel':[r_ang_vel], 'height':[r_height], 'pose':[r_pose], 'action_rate':[r_action_rate], 'lin_vel_z':[r_lin_vel_z], 'rp':[r_rp], 'survival':[r_survival], 'fallen':[r_fallen], 'total':[total_reward]})
         self.reward_history = pd.concat([self.reward_history,new_history], ignore_index=True)
         return total_reward
-    
-    def calculate_step_reward(self, action, steps_taken=0):
-        ''' 
-        This function is run for each physics step to calculate the reward earned by the robot during that step.
-        '''
-
-        # NEW WITH THIS VERSION: 
-        # There should be some 'goal' velocity determined at the beginning of each episode to simulate control.
-        # We should get that and use it to calculate a reward for movement in the target direction. 
-        # There is no 'target box' in this setup - instead it's just trying to follow a velocity vector.
-       
-        # This target velocity should be fairly small (0.5 m/s?) to start with - 
-        # perhaps we can increase the speed as the training progresses?
-
-        # We also want to define a 'home' position for each joint (probably in the __init__ method) 
-        # and punish actions that move too far away from it. This will keep the robot more stable.
-
-        # Get position, turn, velocity
-        current_base_pos, current_base_orient = p.getBasePositionAndOrientation(self.robot_id)
-        base_vel, base_angular_vel = p.getBaseVelocity(self.robot_id)
-        rot_matrix = p.getMatrixFromQuaternion(current_base_orient)
-        local_up_vector = np.array([rot_matrix[2], rot_matrix[5], rot_matrix[8]])
-        forward_vector = np.array([-rot_matrix[3],rot_matrix[0], rot_matrix[6]])
-
-        # Get the target velocity and turn vectors
-        target_vel = self.target_velocity
-        target_turn = self.target_turn
-
-        ## Reward Components: ##
-        # - Velocity in target direction: get the component of the base velocity in the direction of the target velocity
-        goal_component = np.dot(base_vel, target_vel) / (np.linalg.norm(target_vel) + 1e-6)
-        # This should be positive if moving in the right direction, negative if moving away
-        goal_velocity_reward = self.FORWARD_VEL_WEIGHT * goal_component
-
-        # - Uprightness
-        uprightness = local_up_vector[2]
-        upright_reward = self.UPRIGHT_REWARD_WEIGHT * uprightness
-        
-        is_fallen = current_base_pos[2] < 0.1 or uprightness < 0.5
-        # Survival reward that ramps up over time to encourage longer episodes
-        survival_reward = self.SURVIVAL_WEIGHT * steps_taken if not is_fallen else 0.0
-        
-        # Matching orientation with the target velocity direction (encourage facing the direction of movement)
-   
-
-        target_direction = target_vel / (np.linalg.norm(target_vel) + 1e-6)
-        orientation_alignment = np.dot(forward_vector, target_direction)
-        orientation_reward = self.ORIENTATION_REWARD_WEIGHT * max(0.0, orientation_alignment)
-
-        ## - Penalties: ##
-        # - Shaking
-        shake_penalty = self.SHAKE_PENALTY_WEIGHT * np.sum(np.square(base_angular_vel))
-        # - Falling Penalty
-
-        fallen_penalty = self.FALLEN_PENALTY if is_fallen else 0.0
-        # - Distance from home position 
-        joint_states = p.getJointStates(self.robot_id, self.joint_indices)
-        joint_positions = np.array([state[0] for state in joint_states])
-        home_deviation = np.sum(np.square(joint_positions - np.array(self.home_position)))
-        home_penalty = self.HOME_POSITION_PENALTY_WEIGHT * home_deviation
-        # - Jumping
-        jump_penalty = self.JUMP_PENALTY_WEIGHT * abs(base_vel[2])
-        # - High Altitude
-        high_alt_pen = self.HIGH_ALTITUDE_PENALTY_WEIGHT * max(0.0, current_base_pos[2]-1.0)
-        # - Tilting
-        tilt_penalty = self.TILT_PENALTY_WEIGHT * (1.0 - uprightness)
-
-        # Sum all components, return total reward
-        total_reward = (
-            goal_velocity_reward + upright_reward + survival_reward + orientation_reward - home_penalty -
-            shake_penalty - fallen_penalty - jump_penalty - high_alt_pen - tilt_penalty
-        )
-        
-        if steps_taken % 240 == 0 and self.render_mode == 'human':
-            print("================= Step Reward Breakdown ===============")
-            print(f"Target Velocity: {target_vel}, Current Velocity: {base_vel}")
-            print(f"Base Position: {current_base_pos}, Uprightness: {uprightness:.2f}")
-            print(f"Is Fallen: {is_fallen}")
-
-            print(f"Step Reward Breakdown: Forward: {goal_velocity_reward:.2f}, Upright: {upright_reward:.2f}, Survival: {survival_reward:.2f}, Home Penalty: {-home_penalty:.2f}, "
-              f"Shake Penalty: {-shake_penalty:.2f}, Fallen Penalty: {-fallen_penalty:.2f}, Orientation: {orientation_reward:.2f}, Tilt Penalty: {-tilt_penalty:.2f}, "
-              f"Jump Penalty: {-jump_penalty:.2f}, High Alt Penalty: {-high_alt_pen:.2f} => Total: {total_reward:.2f}")
-
-        return total_reward
-        # DEBUG: Print out all the reward components
-
+ 
     def update_config(self, new_config):
         '''
         Update environment parameters based on a new configuration dictionary.
@@ -474,7 +379,7 @@ class BaseEnv(gym.Env):
                 p.stepSimulation()
                 self.steps_taken += 1
                 # NEW: use alternate function, input steps taken for ramping survival reward
-                total_reward += self.calculate_step_reward_new(action, steps_taken=self.steps_taken)
+                total_reward += self.calculate_step_reward(action, steps_taken=self.steps_taken)
 
                 if self.steps_taken >= self.steps_per_episode:
                     break
