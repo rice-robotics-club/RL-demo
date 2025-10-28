@@ -319,11 +319,16 @@ class BaseEnv(gym.Env):
         # Previously the robot could still achieve <95% of the movement rewards without 
         # moving at all in most target velocity ranges, which is not what we want.
 
+        # New: tie the default reward value to some constant that effectively punishes 
+        # the robot for moving in the wrong direction so it's less likely to do random shit when we don't ask it to.
+        default_reward = -0.1
+        # this should be between -0.5 and 0
+
         ## Reward Components: ##
         # 1. Linear Velocity Tracking Reward (negative when the robot is not moving as desired)
-        r_lin_vel = self.FORWARD_VEL_WEIGHT * (np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2) - .5)
+        r_lin_vel = self.FORWARD_VEL_WEIGHT * (np.exp(-2*np.linalg.norm(np.array(self.rolling_avg_speed) - np.array(target_vel))**2) + default_reward)
         # 2. Angular Velocity Tracking Reward (Negative when the robot is moving when it's not supposed to be)
-        r_ang_vel = self.ANGULAR_VEL_WEIGHT * (np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2)) - .5)
+        r_ang_vel = self.ANGULAR_VEL_WEIGHT * (np.exp(-0.01*(np.linalg.norm(np.array(base_angular_vel) - np.array(target_angular_vel))**2)) + default_reward)
         # 3. Height Penalty
         r_height = -20*(current_base_pos[2] - target_z)**2
         # 4. Pose Similarity Penalty
