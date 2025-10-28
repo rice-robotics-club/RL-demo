@@ -128,7 +128,7 @@ if __name__ == "__main__":
 
     try:
         # Disable callback
-        model.learn(total_timesteps=1000000, callback=None, progress_bar=True)  # This task may require longer training
+        model.learn(total_timesteps=1000000, callback=callback_list, progress_bar=True)  # This task may require longer training
     except KeyboardInterrupt:
         print("Training stopped by user.")
         reward_history = pd.read_csv(env.reward_history_filename)
