@@ -4,10 +4,14 @@ from stable_baselines3.common.callbacks import CheckpointCallback
 import os
 import numpy as np
 import pybullet as p
+import argparse
 
 from src.envs.env import BaseEnv, get_min_z
 from src.utils import utils
 from gymnasium import wrappers
+
+# Directly importing ROBOTS to sidestep my crappy file loading function. :)
+from src.utils.config import ROBOTS
 
 '''
 This script is a mismash of the quadreped run_trained.py and the servobot train.py scripts to load and run a trained servobot model
@@ -153,9 +157,23 @@ class VisualizationEnv(BaseEnv):
 
 
 if __name__ == "__main__":
-    # To use a different robot, change the filename here
+    # NEW: Arg parsing!
+    parser = argparse.ArgumentParser(description='Visualize a trained robot model using PyBullet GUI')
+    parser.add_argument('--robot', type=str, default='servobot',
+                        choices=list(ROBOTS.keys()),
+                        help='Robot to visualize (default: servobot)')
+    parser.add_argument('--model', type=str, default=None,
+                        help='Specific model file to load for visualization (optional, default: prompt selection)')
+    args = parser.parse_args()
 
-    urdf_file, save_path, save_prefix, model_path = utils.select_robot(load_model=True)
+    # Try and load requested robot configuration
+    try:
+        urdf_file = ROBOTS[args.robot]['urdf_file']
+        save_path = ROBOTS[args.robot]['save_path']
+        save_prefix = ROBOTS[args.robot]['save_prefix']
+    except KeyError:
+        print(f"Robot '{args.robot}' not found in configuration. Available robots: {list(ROBOTS.keys())}")
+        exit(1)
 
     min_z = get_min_z(urdf_file)
     # Create the environment. Stable-baselines will automatically call reset.
@@ -164,6 +182,12 @@ if __name__ == "__main__":
     # Optionally wrap with video recording (comment out if you don't want videos)
     # env = wrappers.RecordVideo(env, video_folder='./videos/', name_prefix='servobot_demo', episode_trigger=lambda x: True)
 
+    if args.model is not None:
+        model_path = args.model
+    else:
+        print("No model specified. Please specify a model file using the new --model argument!")
+    
+    
     # check to make sure we didnt forget to import a model lmao
     if not os.path.exists(model_path):
         print(f"Error: Model file not found at {model_path}")

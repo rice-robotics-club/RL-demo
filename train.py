@@ -22,6 +22,7 @@ from stable_baselines3 import PPO
 from stable_baselines3.common.callbacks import CheckpointCallback, CallbackList
 import pandas as pd
 import matplotlib.pyplot as plt
+import argparse
 
 # These are our custom modules: 
 # utils has a bunch of helper functions for importing stuff and navigating local files
@@ -30,59 +31,68 @@ from src.envs import env
 from src.utils import utils
 from src.utils.plotting_callback import LivePlottingCallback, LivePlottingCallbackNoGUI
 
+# Directly importing ROBOTS to sidestep my crappy file loading function. :)
+from src.utils.config import ROBOTS
+
+
 if __name__ == "__main__":
-
-    ## NO MORE HARD-CODED RENDER MODES! JUST SET IT AT RUNTIME!! YIPPEEEEE!!!!! ## 
-    user_render_mode_request = input("Run with GUI? (y/n): ").strip().lower()
-    if user_render_mode_request == 'y':
-        render_mode = 'human'
-    else:
-        render_mode = 'headless'
+    # Parse command-line arguments! No more typing in the same stuff every time!!
+    parser = argparse.ArgumentParser(description='Train a quadruped robot using PPO')
+    parser.add_argument('--robot', type=str, default='simple_quadruped',
+                        choices=list(ROBOTS.keys()),
+                        help='Robot to train (default: simple_quadruped)')
+    parser.add_argument('--gui', action='store_true',
+                        help='Run with PyBullet GUI (default: headless)')
+    parser.add_argument('--model', type=str, default=None,
+                        help='Specific model file to load for continued training (optional, default: create new model)')
+    parser.add_argument('--timesteps', type=int, default=2000000,
+                        help='Total training timesteps (default: 2000000)')
+    parser.add_argument('--target-speed', type=float, default=1.0,
+                        help='Target speed for the robot (default: 1.0)')
+    parser.add_argument('--learning-rate', type=float, default=0.0001,
+                        help='Learning rate for PPO (default: 0.0001)')
     
-    urdf_file, save_path, save_prefix = utils.select_robot(load_model=False)
+    args = parser.parse_args()
 
-    # Pass box parameters into the environment.
+    # Set up render mode from input args
+    render_mode = 'human' if args.gui else 'headless'
+    
+    # Try and load requested robot configuration
+    try:
+        urdf_file = ROBOTS[args.robot]['urdf_file']
+        save_path = ROBOTS[args.robot]['save_path']
+        save_prefix = ROBOTS[args.robot]['save_prefix']
+    except KeyError:
+        print(f"Robot '{args.robot}' not found in configuration. Available robots: {list(ROBOTS.keys())}")
+        exit(1)
+
+    # Start our robot at the minimum z to avoid initial falling issues
     min_z = env.get_min_z(urdf_file)
     env = env.BaseEnv(
         render_mode=render_mode, 
         urdf_filename=urdf_file, 
         start_position=[0, 0, -min_z],
-        target_speed = 1,
+        target_speed=args.target_speed,
     )
-    use_existing_model = input("Use existing model if available? (y/n): ").strip().lower() == 'y'
-    if use_existing_model:
-        model_directory_list = os.listdir(save_path)
-        print("Model Directory List: ", model_directory_list)
     
-        # Handle case with no models found
-        if len(model_directory_list) == 0:
-            print("No saved models found. A new model will be created.")
-            use_existing_model = False
-        else:
-            best_model_name = model_directory_list[-1]
-            best_model_path = os.path.join(save_path, best_model_name)
-            
-            # Handle case with multiple models found
-            if len(model_directory_list) > 1:
-                print("Multiple saved models found. Would you like to use the latest one? (y/n): ")
-                choice = input().strip().lower()
-                if choice != 'y':
-                    print("Available models:")
-                    for idx, model_name in enumerate(model_directory_list):
-                        print(f"{idx + 1}: {model_name}")
-                    print("Enter the number of the model you want to use: ")
-                    selected_idx = int(input().strip()) - 1
-                    if 0 <= selected_idx < len(model_directory_list):
-                        best_model_name = model_directory_list[selected_idx]
-                        best_model_path = os.path.join(save_path, best_model_name)
-                    else:
-                        print("Invalid selection. Using the latest model.")
-
-            print(f"Loading existing model from {best_model_path}")
-            model = PPO.load(best_model_path, env=env, device='cpu')
+    # Create or load model
+    if args.model is not None:
+        print(f"Loading model from {args.model}...")
+        try:
+            model = PPO.load(args.model, env=env)
+        except Exception as e:
+            print(f"Error loading model: {e}")
+            exit(1)
     else:
-        model = PPO("MlpPolicy", env, verbose=1, n_steps=2048)  # Slightly larger n_steps may help with harder tasks
+        print("Creating new model...")
+        model = PPO(
+            "MlpPolicy",
+            env,
+            learning_rate=args.learning_rate,
+            verbose=1,
+        )
 
+    # Set up checkpoint callback to save the model every 100k steps
     checkpoint_callback = CheckpointCallback(
         save_freq=100000,
         save_path=os.path.join(save_path, "current/"),
